@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ExternalLink, Youtube, FileText, Lightbulb, BookmarkPlus, Loader2, Star } from 'lucide-react';
+import { ExternalLink, Youtube, FileText, Lightbulb, BookmarkPlus, Loader2, Star, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -155,11 +155,17 @@ export function ResourceResults({
                 const resourceId = `video-${video.url}`;
                 const isStarred = starredResources.has(resourceId);
                 
+                const copyLink = (e: React.MouseEvent) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  navigator.clipboard.writeText(video.url);
+                  toast({ title: 'Link copied!' });
+                };
+                
                 return (
                   <Card 
                     key={index} 
-                    className="w-[280px] flex-shrink-0 hover:shadow-md transition-shadow cursor-pointer group"
-                    onClick={() => window.open(video.url, '_blank')}
+                    className="w-[280px] flex-shrink-0 hover:shadow-md transition-shadow group"
                   >
                     <CardContent className="p-4 space-y-2">
                       <div className="flex items-start justify-between gap-2">
@@ -185,7 +191,15 @@ export function ResourceResults({
                               />
                             )}
                           </Button>
-                          <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={copyLink}
+                            title="Copy link"
+                          >
+                            <Copy className="h-3 w-3 text-muted-foreground" />
+                          </Button>
                         </div>
                       </div>
                       <h4 className="font-medium text-sm line-clamp-2 whitespace-normal">
@@ -196,6 +210,16 @@ export function ResourceResults({
                           {video.description}
                         </p>
                       )}
+                      <a
+                        href={video.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline mt-2"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                        Open on YouTube
+                      </a>
                     </CardContent>
                   </Card>
                 );
@@ -218,11 +242,17 @@ export function ResourceResults({
               const resourceId = `article-${article.url}`;
               const isStarred = starredResources.has(resourceId);
               
+              const copyLink = (e: React.MouseEvent) => {
+                e.preventDefault();
+                e.stopPropagation();
+                navigator.clipboard.writeText(article.url);
+                toast({ title: 'Link copied!' });
+              };
+              
               return (
                 <Card 
                   key={index} 
-                  className="hover:shadow-md transition-shadow cursor-pointer group"
-                  onClick={() => window.open(article.url, '_blank')}
+                  className="hover:shadow-md transition-shadow group"
                 >
                   <CardContent className="p-4 flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3 min-w-0">
@@ -234,6 +264,15 @@ export function ResourceResults({
                             {article.description}
                           </p>
                         )}
+                        <a
+                          href={article.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-1"
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                          Open article
+                        </a>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
@@ -255,10 +294,18 @@ export function ResourceResults({
                           />
                         )}
                       </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={copyLink}
+                        title="Copy link"
+                      >
+                        <Copy className="h-4 w-4 text-muted-foreground" />
+                      </Button>
                       <Badge variant={getSourceBadgeVariant(article.source)} className="text-xs">
                         {article.source}
                       </Badge>
-                      <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
                     </div>
                   </CardContent>
                 </Card>
