@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { ExternalLink, Youtube, FileText, Lightbulb, BookmarkPlus, Loader2, Star, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,6 +26,39 @@ interface ResourceResultsProps {
   userId?: string | null;
 }
 
+// Helper function to safely open external links (works in iframes/webviews)
+const openExternalLink = (url: string, toast: (opts: { title: string; description?: string }) => void) => {
+  try {
+    // First try window.open
+    const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
+    
+    if (newWindow) {
+      return; // Success
+    }
+    
+    // If window.open failed (blocked or iframe), try top-level navigation
+    try {
+      const isFramed = window.self !== window.top;
+      if (isFramed && window.top) {
+        window.top.location.href = url;
+        return;
+      }
+    } catch {
+      // Cross-origin frame, can't access window.top
+    }
+    
+    // Fallback: navigate in same window
+    window.location.href = url;
+  } catch {
+    // Last resort: copy link and notify user
+    navigator.clipboard.writeText(url);
+    toast({
+      title: 'Link copied!',
+      description: 'Popup blocked. Link copied to clipboard - paste in your browser.',
+    });
+  }
+};
+
 export function ResourceResults({ 
   topic, 
   videos, 
@@ -38,6 +71,12 @@ export function ResourceResults({
   const [starredResources, setStarredResources] = useState<Set<string>>(new Set());
   const [starringId, setStarringId] = useState<string | null>(null);
   const { toast } = useToast();
+
+  const handleOpenLink = useCallback((url: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    openExternalLink(url, toast);
+  }, [toast]);
 
   const getSourceIcon = (source: string) => {
     if (source.toLowerCase().includes('youtube')) {
@@ -210,16 +249,13 @@ export function ResourceResults({
                           {video.description}
                         </p>
                       )}
-                      <a
-                        href={video.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline mt-2"
-                        onClick={(e) => e.stopPropagation()}
+                      <button
+                        onClick={(e) => handleOpenLink(video.url, e)}
+                        className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline mt-2 cursor-pointer"
                       >
                         <ExternalLink className="h-3 w-3" />
                         Open on YouTube
-                      </a>
+                      </button>
                     </CardContent>
                   </Card>
                 );
@@ -266,15 +302,13 @@ export function ResourceResults({
                             {article.description}
                           </p>
                         )}
-                        <a
-                          href={article.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-2"
+                        <button
+                          onClick={(e) => handleOpenLink(article.url, e)}
+                          className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-2 cursor-pointer"
                         >
                           <ExternalLink className="h-3 w-3" />
                           Open article
-                        </a>
+                        </button>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0 self-end sm:self-center">
