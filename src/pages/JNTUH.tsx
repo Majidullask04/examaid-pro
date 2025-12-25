@@ -47,6 +47,22 @@ const departments: Department[] = [
   { id: 'aids', name: 'AIDS', fullName: 'AI & Data Science', icon: Bot, description: 'Artificial intelligence, data science', color: 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20' },
 ];
 
+const quickSubjectsMap: Record<string, string[]> = {
+  cse: ['Operating Systems', 'DBMS', 'Data Structures', 'Computer Networks', 'Software Engineering', 'Compiler Design'],
+  ece: ['Digital Electronics', 'Signals & Systems', 'Communication Systems', 'Microprocessors', 'VLSI Design', 'Antenna Theory'],
+  eee: ['Power Systems', 'Electrical Machines', 'Control Systems', 'Power Electronics', 'Transformers', 'Switchgear'],
+  mech: ['Thermodynamics', 'Fluid Mechanics', 'Manufacturing Processes', 'Machine Design', 'Heat Transfer', 'IC Engines'],
+  civil: ['Structural Analysis', 'Concrete Technology', 'Surveying', 'Geotechnical Engineering', 'Transportation', 'Hydraulics'],
+  it: ['Web Technologies', 'Cloud Computing', 'Software Testing', 'Data Mining', 'Information Security', 'Mobile Computing'],
+  csm: ['Machine Learning', 'Deep Learning', 'NLP', 'Computer Vision', 'Reinforcement Learning', 'AI Ethics'],
+  csd: ['Big Data Analytics', 'Data Warehousing', 'Statistical Methods', 'Data Visualization', 'Predictive Analytics', 'ETL Processes'],
+  aids: ['Artificial Intelligence', 'Data Science', 'Python for AI', 'Neural Networks', 'Data Engineering', 'ML Algorithms'],
+};
+
+const getQuickSubjects = (deptId: string): string[] => {
+  return quickSubjectsMap[deptId] || ['Data Structures', 'Algorithms', 'Programming'];
+};
+
 export default function JNTUH() {
   const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
   const [query, setQuery] = useState('');
@@ -208,6 +224,44 @@ export default function JNTUH() {
                 <selectedDepartment.icon className="h-4 w-4 mr-1" />
                 {selectedDepartment.name} - R22
               </Badge>
+            </div>
+
+            {/* Usage Guide */}
+            <Card className="bg-muted/50 border-dashed">
+              <CardContent className="py-4">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <BookOpen className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className="font-medium text-sm">How to use</h3>
+                    <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
+                      <li>Click a quick subject button below OR type your subject/topic</li>
+                      <li>Click "Analyze with AI" to start the 4-stage analysis</li>
+                      <li>Get high-probability questions for all units</li>
+                    </ol>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Quick Subject Buttons */}
+            <div className="space-y-3">
+              <h3 className="text-sm font-medium text-muted-foreground">Quick Select Common Subjects:</h3>
+              <div className="flex flex-wrap gap-2">
+                {getQuickSubjects(selectedDepartment.id).map((subject) => (
+                  <Button
+                    key={subject}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setQuery(subject + ' high probability questions for all units')}
+                    disabled={isProcessing}
+                    className="text-xs"
+                  >
+                    {subject}
+                  </Button>
+                ))}
+              </div>
             </div>
 
             {/* Search Card */}
