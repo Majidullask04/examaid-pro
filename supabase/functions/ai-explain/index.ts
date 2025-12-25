@@ -133,41 +133,26 @@ Structure your summary as:
   }
 }
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
+// DeepSeek R1 reasoning for final synthesis
+async function synthesizeWithDeepSeek(
+  question: string, 
+  answer: string | null, 
+  searchContext: string, 
+  geminiAnalysis: string, 
+  type: string, 
+  apiKey: string
+): Promise<Response> {
+  console.log("Performing final synthesis with DeepSeek R1 reasoning");
+  
+  let systemPrompt = '';
+  let userPrompt = '';
 
-  try {
-    const { question, answer, type } = await req.json();
-    const KIMI2_API_KEY = Deno.env.get('KIMI2_API_KEY');
-    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
-    
-    if (!KIMI2_API_KEY) {
-      throw new Error("KIMI2_API_KEY is not configured");
-    }
-    if (!GEMINI_API_KEY) {
-      throw new Error("GEMINI_API_KEY is not configured");
-    }
-
-    console.log(`Processing ${type} request with Gemini Grounding + Kimi2 Thinking`);
-
-    // Step 1: Use Gemini grounding search for real-time context
-    const searchQuery = type === 'summary' ? question.slice(0, 500) : question;
-    const searchContext = await searchWithGemini(searchQuery, GEMINI_API_KEY);
-    
-    // Step 2: Use Gemini 2.5 Pro for initial analysis with search context
-    const geminiAnalysis = await analyzeWithGeminiPro(question, answer, searchContext, type, GEMINI_API_KEY);
-
-    // Step 3: Use Kimi2 thinking model for enhanced reasoning with all context
-    let systemPrompt = '';
-    let userPrompt = '';
-
-    if (type === 'explain') {
-      systemPrompt = `You are an expert educational assistant with advanced reasoning capabilities. 
+  if (type === 'explain') {
+    systemPrompt = `You are an expert educational assistant with advanced reasoning capabilities. 
 You have access to real-time search results and initial analysis. 
-Synthesize all information to provide the clearest, most accurate explanation possible.`;
-      userPrompt = `Using the following research and analysis, provide the best possible explanation:
+Synthesize all information to provide the clearest, most accurate explanation possible.
+Think step by step through the problem before providing your final answer.`;
+    userPrompt = `Using the following research and analysis, provide the best possible explanation:
 
 Real-Time Research:
 ${searchContext}
@@ -179,11 +164,12 @@ Original Question: ${question}
 ${answer ? `Answer: ${answer}` : '(No answer provided)'}
 
 Synthesize everything into a clear, comprehensive explanation that helps students truly understand the concept.`;
-    } else if (type === 'deep') {
-      systemPrompt = `You are an expert educational analyst with deep thinking and reasoning capabilities.
+  } else if (type === 'deep') {
+    systemPrompt = `You are an expert educational analyst with deep thinking and reasoning capabilities.
 Use multi-step reasoning to analyze every aspect thoroughly.
-You have access to real-time research and initial analysis to enhance your response.`;
-      userPrompt = `Perform the deepest possible analysis using all available information:
+You have access to real-time research and initial analysis to enhance your response.
+Think deeply and reason through each step before providing your analysis.`;
+    userPrompt = `Perform the deepest possible analysis using all available information:
 
 Real-Time Research:
 ${searchContext}
@@ -202,10 +188,11 @@ Think step-by-step and provide:
 5. **Memory Tips**: Effective mnemonics and memory techniques
 6. **Practice Application**: Real-world examples and similar problems
 7. **Key Insights**: Most important takeaways from your analysis`;
-    } else if (type === 'summary') {
-      systemPrompt = `You are an expert educational assistant creating the most comprehensive revision summaries.
-Use deep analysis and real-time research to create the ultimate study guide.`;
-      userPrompt = `Create the ultimate revision summary using all available research:
+  } else if (type === 'summary') {
+    systemPrompt = `You are an expert educational assistant creating the most comprehensive revision summaries.
+Use deep analysis and real-time research to create the ultimate study guide.
+Reason through the key concepts and their relationships before summarizing.`;
+    userPrompt = `Create the ultimate revision summary using all available research:
 
 Real-Time Research:
 ${searchContext}
@@ -224,31 +211,67 @@ Create the most comprehensive summary with:
 5. **Exam Tips**: Strategies for answering similar questions
 6. **Common Pitfalls**: Mistakes to avoid
 7. **Memory Aids**: Mnemonics and study techniques`;
-    } else {
-      throw new Error("Invalid explanation type");
+  }
+
+  // Use DeepSeek R1 API for final synthesis with reasoning
+  const response = await fetch('https://api.deepseek.com/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'deepseek-reasoner',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt }
+      ],
+      stream: true,
+    }),
+  });
+
+  return response;
+}
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const { question, answer, type } = await req.json();
+    const DEEPSEEK_API_KEY = Deno.env.get('DEEPSEEK_API_KEY');
+    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
+    
+    if (!DEEPSEEK_API_KEY) {
+      throw new Error("DEEPSEEK_API_KEY is not configured");
+    }
+    if (!GEMINI_API_KEY) {
+      throw new Error("GEMINI_API_KEY is not configured");
     }
 
-    // Use Kimi2 API for final synthesis with thinking capability
-    const response = await fetch('https://api.moonshot.cn/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${KIMI2_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'kimi-k2-0711-preview',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ],
-        stream: true,
-        temperature: 0.7,
-      }),
-    });
+    console.log(`Processing ${type} request with Gemini Grounding + DeepSeek R1 Reasoning`);
+
+    // Step 1: Use Gemini grounding search for real-time context
+    const searchQuery = type === 'summary' ? question.slice(0, 500) : question;
+    const searchContext = await searchWithGemini(searchQuery, GEMINI_API_KEY);
+    
+    // Step 2: Use Gemini 2.5 Pro for initial analysis with search context
+    const geminiAnalysis = await analyzeWithGeminiPro(question, answer, searchContext, type, GEMINI_API_KEY);
+
+    // Step 3: Use DeepSeek R1 reasoning model for final synthesis
+    const response = await synthesizeWithDeepSeek(
+      question, 
+      answer, 
+      searchContext, 
+      geminiAnalysis, 
+      type, 
+      DEEPSEEK_API_KEY
+    );
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Kimi2 API error:', response.status, errorText);
+      console.error('DeepSeek API error:', response.status, errorText);
       
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again later." }), {
@@ -263,7 +286,7 @@ Create the most comprehensive summary with:
         });
       }
       
-      throw new Error(`Kimi2 API error: ${response.status} - ${errorText}`);
+      throw new Error(`DeepSeek API error: ${response.status} - ${errorText}`);
     }
 
     // Stream the response
