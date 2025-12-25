@@ -48,16 +48,24 @@ serve(async (req) => {
 
     console.log('Searching for learning resources:', topic);
 
-    // Search for YouTube videos
-    const videoSearchPrompt = `Find the 5 best YouTube tutorial videos for learning "${topic}" for JNTUH exam preparation or engineering students. 
-    For each video, provide:
-    - Video title
-    - YouTube URL (must be real youtube.com URLs)
-    - Channel name
-    - Brief description of what the video covers
-    
-    Focus on educational content from channels like: Neso Academy, Gate Smashers, Abdul Bari, Jenny's Lectures, Telusko, CodeWithHarry, freeCodeCamp.
-    ${context ? `Additional context: ${context}` : ''}`;
+    // Generate YouTube search URLs directly (more reliable than asking AI for specific video URLs)
+    const videoKeywords = [
+      `${topic} tutorial`,
+      `${topic} JNTUH`,
+      `${topic} Gate Smashers`,
+      `${topic} Neso Academy`,
+      `${topic} explained`,
+    ];
+
+    // Create video resources with YouTube search URLs
+    const videos: ResourceResult['videos'] = videoKeywords.map((keyword, index) => ({
+      title: `Search: ${keyword}`,
+      url: `https://www.youtube.com/results?search_query=${encodeURIComponent(keyword)}`,
+      source: 'YouTube Search',
+      description: `Find ${topic} videos on YouTube with this search`,
+    }));
+
+    console.log('Generated YouTube search URLs for:', topic);
 
     const articleSearchPrompt = `Find the 5 best tutorial articles for learning "${topic}" for JNTUH exam preparation or engineering students.
     Search from educational websites like: GeeksforGeeks, TutorialsPoint, JavaTPoint, Programiz, W3Schools, Medium.
@@ -68,52 +76,31 @@ serve(async (req) => {
     - Brief description of content
     ${context ? `Additional context: ${context}` : ''}`;
 
-    // Make parallel requests to Perplexity
-    const [videoResponse, articleResponse] = await Promise.all([
-      fetch('https://api.perplexity.ai/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'sonar',
-          messages: [
-            { 
-              role: 'system', 
-              content: 'You are a helpful assistant that finds real educational resources. Always provide actual working URLs. Format your response as JSON with a videos array containing objects with title, url, source, and description fields.' 
-            },
-            { role: 'user', content: videoSearchPrompt }
-          ],
-          search_domain_filter: ['youtube.com'],
-        }),
+    // Only fetch articles from Perplexity (videos are now search links)
+    const articleResponse = await fetch('https://api.perplexity.ai/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'sonar',
+        messages: [
+          { 
+            role: 'system', 
+            content: 'You are a helpful assistant that finds real educational resources. Always provide actual working URLs. Format your response as JSON with an articles array containing objects with title, url, source, and description fields.' 
+          },
+          { role: 'user', content: articleSearchPrompt }
+        ],
+        search_domain_filter: ['geeksforgeeks.org', 'tutorialspoint.com', 'javatpoint.com', 'programiz.com', 'w3schools.com', 'medium.com'],
       }),
-      fetch('https://api.perplexity.ai/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'sonar',
-          messages: [
-            { 
-              role: 'system', 
-              content: 'You are a helpful assistant that finds real educational resources. Always provide actual working URLs. Format your response as JSON with an articles array containing objects with title, url, source, and description fields.' 
-            },
-            { role: 'user', content: articleSearchPrompt }
-          ],
-          search_domain_filter: ['geeksforgeeks.org', 'tutorialspoint.com', 'javatpoint.com', 'programiz.com', 'w3schools.com', 'medium.com'],
-        }),
-      }),
-    ]);
+    });
 
-    if (!videoResponse.ok || !articleResponse.ok) {
-      const videoError = !videoResponse.ok ? await videoResponse.text() : '';
-      const articleError = !articleResponse.ok ? await articleResponse.text() : '';
-      console.error('Perplexity API errors:', { videoError, articleError });
+    if (!articleResponse.ok) {
+      const articleError = await articleResponse.text();
+      console.error('Perplexity API error:', articleError);
       
-      if (videoResponse.status === 429 || articleResponse.status === 429) {
+      if (articleResponse.status === 429) {
         return new Response(
           JSON.stringify({ error: 'Search rate limit exceeded. Please try again later.' }),
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -126,40 +113,16 @@ serve(async (req) => {
       );
     }
 
-    const videoData = await videoResponse.json();
     const articleData = await articleResponse.json();
-
-    console.log('Video search response received');
     console.log('Article search response received');
 
     // Parse the responses
-    const videoContent = videoData.choices?.[0]?.message?.content || '';
     const articleContent = articleData.choices?.[0]?.message?.content || '';
-    const videoCitations = videoData.citations || [];
     const articleCitations = articleData.citations || [];
 
-    // Try to extract structured data from responses
-    let videos: ResourceResult['videos'] = [];
+    // Parse article content
     let articles: ResourceResult['articles'] = [];
 
-    // Parse video content
-    try {
-      const videoJsonMatch = videoContent.match(/\{[\s\S]*"videos"[\s\S]*\}/);
-      if (videoJsonMatch) {
-        const parsed = JSON.parse(videoJsonMatch[0]);
-        videos = parsed.videos || [];
-      }
-    } catch {
-      // Fallback: extract from citations
-      videos = videoCitations.slice(0, 5).map((url: string, i: number) => ({
-        title: `Video Resource ${i + 1}`,
-        url,
-        source: 'YouTube',
-        description: 'Educational video resource'
-      }));
-    }
-
-    // Parse article content
     try {
       const articleJsonMatch = articleContent.match(/\{[\s\S]*"articles"[\s\S]*\}/);
       if (articleJsonMatch) {
@@ -174,19 +137,6 @@ serve(async (req) => {
         source: new URL(url).hostname.replace('www.', ''),
         description: 'Educational article resource'
       }));
-    }
-
-    // If still no videos, parse from text content
-    if (videos.length === 0 && videoContent) {
-      const urlMatches = videoContent.match(/https?:\/\/(?:www\.)?youtube\.com\/watch\?v=[^\s\)\]]+/g);
-      if (urlMatches) {
-        videos = urlMatches.slice(0, 5).map((url: string, i: number) => ({
-          title: `YouTube Video ${i + 1}`,
-          url: url.replace(/[\)\]]$/, ''),
-          source: 'YouTube',
-          description: 'Video tutorial'
-        }));
-      }
     }
 
     // If still no articles, parse from text content
@@ -215,7 +165,7 @@ serve(async (req) => {
       videos,
       articles,
       learningPath,
-      citations: [...videoCitations, ...articleCitations],
+      citations: articleCitations,
     };
 
     console.log('Returning resources:', { videoCount: videos.length, articleCount: articles.length });

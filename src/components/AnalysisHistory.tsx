@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { History, Trash2, Clock, BookOpen } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
+import { useAuth } from '@/hooks/useAuth';
 
 interface HistoryItem {
   id: string;
@@ -22,6 +23,7 @@ interface AnalysisHistoryProps {
 }
 
 export function AnalysisHistory({ sessionId, onLoadHistory }: AnalysisHistoryProps) {
+  const { user } = useAuth();
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [open, setOpen] = useState(false);
@@ -29,12 +31,20 @@ export function AnalysisHistory({ sessionId, onLoadHistory }: AnalysisHistoryPro
   const fetchHistory = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
+      // Fetch by user_id if logged in, otherwise by session_id
+      let query = supabase
         .from('jntuh_analysis_history')
         .select('*')
-        .eq('session_id', sessionId)
         .order('created_at', { ascending: false })
         .limit(20);
+
+      if (user?.id) {
+        query = query.eq('user_id', user.id);
+      } else {
+        query = query.eq('session_id', sessionId);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       setHistory(data || []);
@@ -54,7 +64,7 @@ export function AnalysisHistory({ sessionId, onLoadHistory }: AnalysisHistoryPro
     if (open) {
       fetchHistory();
     }
-  }, [open, sessionId]);
+  }, [open, sessionId, user?.id]);
 
   const handleDelete = async (id: string) => {
     try {

@@ -10,6 +10,7 @@ import { AnalysisHistory } from '@/components/AnalysisHistory';
 import { LearningResources } from '@/components/LearningResources';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useAuth } from '@/hooks/useAuth';
 import { 
   Cpu, 
   Radio, 
@@ -78,6 +79,7 @@ const getSessionId = (): string => {
 };
 
 export default function JNTUH() {
+  const { user } = useAuth();
   const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
   const [query, setQuery] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -96,6 +98,7 @@ export default function JNTUH() {
           department,
           subject,
           result: analysisResult,
+          user_id: user?.id || null,
         });
 
       if (error) {
