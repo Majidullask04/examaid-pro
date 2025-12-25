@@ -117,11 +117,11 @@ Generate:
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'google/gemini-2.5-pro',
         messages: [
           {
             role: 'system',
-            content: 'You are a senior JNTUH professor with 20+ years experience. Provide thorough, exam-focused analysis.'
+            content: 'You are a senior JNTUH professor with 20+ years experience. Provide thorough, exam-focused analysis with hit ratios and confidence levels.'
           },
           {
             role: 'user',
@@ -158,35 +158,107 @@ async function stage3_Synthesis(
 ): Promise<Response> {
   console.log("=== STAGE 3: Final Synthesis (Streaming) ===");
   
-  let systemPrompt = `You are an elite educational AI for JNTUH R22 exam preparation.
-You have been provided with research and analysis from previous stages.
-Synthesize everything into a comprehensive, well-structured response.
-Focus on high-probability content and exam patterns.
-Use clear formatting with headers, bullet points, and highlights.`;
+  const systemPrompt = `You are an elite educational AI for JNTUH R22 exam preparation.
+You must provide a clean, well-structured analysis using proper markdown formatting.
+Do NOT use special characters like asterisks for decoration. Use proper markdown headers, tables, and lists.
+Focus on high-probability content and exam patterns.`;
+
+  const structuredOutputFormat = `
+## Subject Analysis
+
+### Methodology
+[Brief methodology description]
+
+---
+
+## Top Recurring Topics & Hit Ratio
+
+| # | Topic | Years Appeared | Hit Ratio | Confidence |
+|---|-------|----------------|-----------|------------|
+| 1 | [Topic Name] | 2019, 2021, 2023 | 75% | High |
+| 2 | [Topic Name] | 2020, 2022 | 50% | Medium |
+(Add more rows as needed)
+
+---
+
+## Unit-wise Important Questions
+
+### UNIT 1: [Unit Title]
+
+| Question | Hit Ratio | Confidence | Years |
+|----------|-----------|------------|-------|
+| [Question text] | 80% | High | 2019, 2022, 2023 |
+| [Question text] | 60% | Medium | 2020, 2021 |
+
+### UNIT 2: [Unit Title]
+(Similar table format)
+
+### UNIT 3: [Unit Title]
+(Similar table format)
+
+### UNIT 4: [Unit Title]
+(Similar table format)
+
+### UNIT 5: [Unit Title]
+(Similar table format)
+
+---
+
+## Action Plan For You
+
+### If you have 1 DAY before exam:
+- Focus on these top 5 questions: [list]
+- Memorize these formulas: [list]
+- Skip these low-priority topics: [list]
+
+### If you have 1 WEEK before exam:
+- Day 1-2: Cover Unit 1 & 2 focusing on [topics]
+- Day 3-4: Cover Unit 3 & 4 focusing on [topics]
+- Day 5-6: Practice previous questions + weak areas
+- Day 7: Quick revision + formula review
+
+### If you have 1 MONTH before exam:
+- Week 1: Complete Unit 1-2 with thorough practice
+- Week 2: Complete Unit 3-4 with thorough practice
+- Week 3: Unit 5 + Mock tests + weak area focus
+- Week 4: Full revision + previous papers + formula sheets
+
+---
+
+## My Recommendation
+
+Based on this analysis:
+- **Start with**: [Most critical topic to begin]
+- **Must not miss**: [Absolutely essential concept]
+- **Common mistake to avoid**: [Warning about typical errors]
+- **Pro tip for maximum marks**: [Exam scoring strategy]
+`;
 
   let userPrompt = '';
   
-  if (type === 'explain') {
-    userPrompt = `SYNTHESIZE INTO THE ULTIMATE EXPLANATION:
+  if (type === 'deep') {
+    userPrompt = `CREATE COMPREHENSIVE EXAM ANALYSIS:
 
-=== RESEARCH ===
+=== RESEARCH DATA ===
 ${stage1}
 
-=== ANALYSIS ===
+=== DETAILED ANALYSIS ===
 ${stage2}
 
-ORIGINAL QUESTION: ${question}
-${answer ? `ANSWER: ${answer}` : ''}
+SUBJECT/TOPIC: ${question}
 
-Create a clear, comprehensive explanation that:
-- Is easy to understand
-- Covers all important aspects
-- Provides exam tips
-- Shows how to answer in exams
+Generate a complete analysis following this EXACT structure:
+${structuredOutputFormat}
 
-Format with clear sections and bullet points.`;
-  } else if (type === 'deep') {
-    userPrompt = `CREATE COMPREHENSIVE DEEP ANALYSIS:
+Important:
+- Use clean markdown with proper headers (##, ###)
+- Create proper tables with | separators
+- Include realistic hit ratios (percentage) based on pattern analysis
+- Confidence levels: High (>70%), Medium (40-70%), Low (<40%)
+- Provide specific, actionable study plans for different time scenarios
+- Make recommendations practical and specific to the subject`;
+  } else if (type === 'explain') {
+    userPrompt = `CREATE CLEAR EXPLANATION:
 
 === RESEARCH ===
 ${stage1}
@@ -197,17 +269,15 @@ ${stage2}
 QUESTION: ${question}
 ${answer ? `ANSWER: ${answer}` : ''}
 
-Provide the complete analysis with:
-1. **Complete Understanding**: Everything needed
-2. **Step-by-Step Mastery**: Logical progression
-3. **Exam Excellence**: How to score maximum marks
-4. **High Probability Questions**: Likely exam questions
-5. **Memory Tips**: Techniques to remember
-6. **Practice Guidance**: How to practice
+Provide a clear, well-formatted explanation with:
+1. Simple concept breakdown
+2. Key points to remember
+3. How to answer in exam
+4. Related questions to practice
 
-Make it thorough but well-organized.`;
-  } else if (type === 'summary') {
-    userPrompt = `CREATE ULTIMATE REVISION SUMMARY:
+Use clean markdown formatting.`;
+  } else {
+    userPrompt = `CREATE REVISION SUMMARY:
 
 === RESEARCH ===
 ${stage1}
@@ -217,15 +287,8 @@ ${stage2}
 
 CONTENT: ${question}
 
-Generate:
-1. **Priority Topics**: Ranked by exam probability
-2. **Must-Know List**: Essential content
-3. **Formula Quick Reference**: All key formulas
-4. **30-Minute Revision Guide**: Last-minute prep
-5. **Question Predictions**: Most likely questions
-6. **Scoring Tips**: Maximize marks
-
-Make it concise and actionable.`;
+Generate a concise revision guide with proper formatting.
+Include quick revision points, formulas, and exam tips.`;
   }
 
   const response = await fetch(LOVABLE_AI_URL, {
@@ -235,7 +298,7 @@ Make it concise and actionable.`;
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'google/gemini-2.5-flash',
+      model: 'google/gemini-2.5-pro',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }
@@ -269,7 +332,7 @@ serve(async (req) => {
     const searchQuery = type === 'summary' ? question.slice(0, 500) : question;
     const stage1 = await stage1_Research(searchQuery, LOVABLE_API_KEY);
     
-    // Stage 2: Analysis
+    // Stage 2: Analysis with Pro model
     const stage2 = await stage2_Analysis(question, answer, stage1, type, LOVABLE_API_KEY);
 
     // Stage 3: Final Synthesis with streaming
