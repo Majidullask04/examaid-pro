@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { supabase } from '@/integrations/supabase/client';
+
 import { toast } from 'sonner';
 import { 
   Cpu, 
@@ -83,64 +83,72 @@ export default function JNTUH() {
     try {
       const enhancedQuery = `JNTUH R22 ${selectedDepartment.fullName} - High probability exam analysis for all units: ${query}. Focus on most frequently asked questions and important topics across all units.`;
 
-      const response = await supabase.functions.invoke('ai-explain', {
-        body: { 
+      // Use direct fetch for proper streaming support
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-explain`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          'Content-Type': 'application/json',
+          'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({ 
           question: enhancedQuery, 
           answer: null, 
           type: 'deep' 
-        },
+        }),
       });
 
-      if (response.error) {
-        throw new Error(response.error.message);
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`API error: ${response.status} - ${errorText}`);
       }
 
-      // Handle streaming response
-      const reader = response.data.getReader?.();
-      if (reader) {
-        const decoder = new TextDecoder();
-        let fullText = '';
-        let stageCount = 0;
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('No response body');
+      }
 
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
+      const decoder = new TextDecoder();
+      let fullText = '';
+      let stageCount = 0;
+      let buffer = '';
 
-          const chunk = decoder.decode(value, { stream: true });
-          const lines = chunk.split('\n');
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
 
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const data = line.slice(6);
-              if (data === '[DONE]') continue;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
 
-              try {
-                const parsed = JSON.parse(data);
-                const content = parsed.choices?.[0]?.delta?.content;
-                if (content) {
-                  fullText += content;
-                  setResult(fullText);
-                  
-                  // Update processing stage based on content length
-                  if (fullText.length > 100 && stageCount === 0) {
-                    setProcessingStage('Stage 2: Analyzing concepts...');
-                    stageCount = 1;
-                  } else if (fullText.length > 500 && stageCount === 1) {
-                    setProcessingStage('Stage 3: Building exam strategy...');
-                    stageCount = 2;
-                  } else if (fullText.length > 1000 && stageCount === 2) {
-                    setProcessingStage('Final: DeepSeek R1 reasoning...');
-                    stageCount = 3;
-                  }
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6).trim();
+            if (data === '[DONE]') continue;
+
+            try {
+              const parsed = JSON.parse(data);
+              const content = parsed.choices?.[0]?.delta?.content;
+              if (content) {
+                fullText += content;
+                setResult(fullText);
+                
+                if (fullText.length > 100 && stageCount === 0) {
+                  setProcessingStage('Stage 2: Analyzing concepts...');
+                  stageCount = 1;
+                } else if (fullText.length > 500 && stageCount === 1) {
+                  setProcessingStage('Stage 3: Building exam strategy...');
+                  stageCount = 2;
+                } else if (fullText.length > 1000 && stageCount === 2) {
+                  setProcessingStage('Final: Generating response...');
+                  stageCount = 3;
                 }
-              } catch {
-                // Skip invalid JSON
               }
+            } catch {
+              // Skip invalid JSON
             }
           }
         }
-      } else if (typeof response.data === 'string') {
-        setResult(response.data);
       }
 
       setProcessingStage('');
