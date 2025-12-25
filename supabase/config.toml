@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.find-resources]
 verify_jwt = false
+
+[functions.ai-chat-solver]
+verify_jwt = false

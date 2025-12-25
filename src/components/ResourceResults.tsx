@@ -1,9 +1,13 @@
-import { ExternalLink, Youtube, FileText, Lightbulb, BookmarkPlus, Loader2 } from 'lucide-react';
+import { useState } from 'react';
+import { ExternalLink, Youtube, FileText, Lightbulb, BookmarkPlus, Loader2, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 interface ResourceItem {
   title: string;
@@ -19,6 +23,7 @@ interface ResourceResultsProps {
   learningPath: string;
   onSaveToNotes?: () => void;
   isSaving?: boolean;
+  userId?: string | null;
 }
 
 export function ResourceResults({ 
@@ -27,8 +32,13 @@ export function ResourceResults({
   articles, 
   learningPath, 
   onSaveToNotes,
-  isSaving 
+  isSaving,
+  userId
 }: ResourceResultsProps) {
+  const [starredResources, setStarredResources] = useState<Set<string>>(new Set());
+  const [starringId, setStarringId] = useState<string | null>(null);
+  const { toast } = useToast();
+
   const getSourceIcon = (source: string) => {
     if (source.toLowerCase().includes('youtube')) {
       return <Youtube className="h-4 w-4 text-destructive" />;
@@ -40,6 +50,72 @@ export function ResourceResults({
     if (source.toLowerCase().includes('youtube')) return 'destructive';
     if (source.toLowerCase().includes('geeksforgeeks')) return 'default';
     return 'secondary';
+  };
+
+  const toggleStarResource = async (resource: ResourceItem, type: 'video' | 'article', e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    if (!userId) {
+      toast({
+        title: 'Sign in required',
+        description: 'Please sign in to save resources.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const resourceId = `${type}-${resource.url}`;
+    const isStarred = starredResources.has(resourceId);
+    setStarringId(resourceId);
+
+    try {
+      if (isStarred) {
+        const { error } = await supabase
+          .from('starred_items')
+          .delete()
+          .eq('user_id', userId)
+          .eq('item_type', 'resource')
+          .contains('metadata', { url: resource.url });
+
+        if (error) throw error;
+
+        setStarredResources(prev => {
+          const next = new Set(prev);
+          next.delete(resourceId);
+          return next;
+        });
+        toast({ title: 'Removed from starred' });
+      } else {
+        const { error } = await supabase
+          .from('starred_items')
+          .insert({
+            user_id: userId,
+            item_type: 'resource',
+            title: resource.title,
+            content: resource.description || resource.title,
+            topic: topic,
+            metadata: { 
+              url: resource.url, 
+              source: resource.source,
+              type: type 
+            },
+          });
+
+        if (error) throw error;
+
+        setStarredResources(prev => new Set(prev).add(resourceId));
+        toast({ title: 'Saved to starred items!' });
+      }
+    } catch (error) {
+      console.error('Error toggling star:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update starred items',
+        variant: 'destructive',
+      });
+    } finally {
+      setStarringId(null);
+    }
   };
 
   return (
@@ -75,30 +151,55 @@ export function ResourceResults({
           </div>
           <ScrollArea className="w-full whitespace-nowrap">
             <div className="flex gap-4 pb-4">
-              {videos.map((video, index) => (
-                <Card 
-                  key={index} 
-                  className="w-[280px] flex-shrink-0 hover:shadow-md transition-shadow cursor-pointer group"
-                  onClick={() => window.open(video.url, '_blank')}
-                >
-                  <CardContent className="p-4 space-y-2">
-                    <div className="flex items-start justify-between gap-2">
-                      <Badge variant={getSourceBadgeVariant(video.source)} className="text-xs">
-                        {video.source}
-                      </Badge>
-                      <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                    </div>
-                    <h4 className="font-medium text-sm line-clamp-2 whitespace-normal">
-                      {video.title}
-                    </h4>
-                    {video.description && (
-                      <p className="text-xs text-muted-foreground line-clamp-2 whitespace-normal">
-                        {video.description}
-                      </p>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
+              {videos.map((video, index) => {
+                const resourceId = `video-${video.url}`;
+                const isStarred = starredResources.has(resourceId);
+                
+                return (
+                  <Card 
+                    key={index} 
+                    className="w-[280px] flex-shrink-0 hover:shadow-md transition-shadow cursor-pointer group"
+                    onClick={() => window.open(video.url, '_blank')}
+                  >
+                    <CardContent className="p-4 space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <Badge variant={getSourceBadgeVariant(video.source)} className="text-xs">
+                          {video.source}
+                        </Badge>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={(e) => toggleStarResource(video, 'video', e)}
+                            disabled={starringId === resourceId}
+                          >
+                            {starringId === resourceId ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <Star 
+                                className={cn(
+                                  'h-3 w-3',
+                                  isStarred ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground'
+                                )} 
+                              />
+                            )}
+                          </Button>
+                          <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                        </div>
+                      </div>
+                      <h4 className="font-medium text-sm line-clamp-2 whitespace-normal">
+                        {video.title}
+                      </h4>
+                      {video.description && (
+                        <p className="text-xs text-muted-foreground line-clamp-2 whitespace-normal">
+                          {video.description}
+                        </p>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
             <ScrollBar orientation="horizontal" />
           </ScrollArea>
@@ -113,33 +214,56 @@ export function ResourceResults({
             <h3 className="font-semibold">Article Resources</h3>
           </div>
           <div className="grid gap-3">
-            {articles.map((article, index) => (
-              <Card 
-                key={index} 
-                className="hover:shadow-md transition-shadow cursor-pointer group"
-                onClick={() => window.open(article.url, '_blank')}
-              >
-                <CardContent className="p-4 flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-3 min-w-0">
-                    {getSourceIcon(article.source)}
-                    <div className="min-w-0">
-                      <h4 className="font-medium text-sm truncate">{article.title}</h4>
-                      {article.description && (
-                        <p className="text-xs text-muted-foreground truncate">
-                          {article.description}
-                        </p>
-                      )}
+            {articles.map((article, index) => {
+              const resourceId = `article-${article.url}`;
+              const isStarred = starredResources.has(resourceId);
+              
+              return (
+                <Card 
+                  key={index} 
+                  className="hover:shadow-md transition-shadow cursor-pointer group"
+                  onClick={() => window.open(article.url, '_blank')}
+                >
+                  <CardContent className="p-4 flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3 min-w-0">
+                      {getSourceIcon(article.source)}
+                      <div className="min-w-0">
+                        <h4 className="font-medium text-sm truncate">{article.title}</h4>
+                        {article.description && (
+                          <p className="text-xs text-muted-foreground truncate">
+                            {article.description}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <Badge variant={getSourceBadgeVariant(article.source)} className="text-xs">
-                      {article.source}
-                    </Badge>
-                    <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={(e) => toggleStarResource(article, 'article', e)}
+                        disabled={starringId === resourceId}
+                      >
+                        {starringId === resourceId ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Star 
+                            className={cn(
+                              'h-4 w-4',
+                              isStarred ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground'
+                            )} 
+                          />
+                        )}
+                      </Button>
+                      <Badge variant={getSourceBadgeVariant(article.source)} className="text-xs">
+                        {article.source}
+                      </Badge>
+                      <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         </div>
       )}

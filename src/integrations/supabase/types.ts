@@ -109,6 +109,39 @@ export type Database = {
           },
         ]
       }
+      starred_items: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          item_type: string
+          metadata: Json | null
+          title: string
+          topic: string | null
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          item_type: string
+          metadata?: Json | null
+          title: string
+          topic?: string | null
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          item_type?: string
+          metadata?: Json | null
+          title?: string
+          topic?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       study_notes: {
         Row: {
           content: string | null
