@@ -10,6 +10,7 @@ import SubjectUnits from "./pages/SubjectUnits";
 import UnitQuestions from "./pages/UnitQuestions";
 import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
+import JNTUH from "./pages/JNTUH";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
             <Route path="/units/:unitId" element={<UnitQuestions />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/admin" element={<Admin />} />
+            <Route path="/jntuh" element={<JNTUH />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
