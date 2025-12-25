@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { MarkdownRenderer } from '@/components/MarkdownRenderer';
 import { AnalysisHistory } from '@/components/AnalysisHistory';
+import { LearningResources } from '@/components/LearningResources';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { 
@@ -25,7 +26,8 @@ import {
   GraduationCap,
   BookOpen,
   Copy,
-  Check
+  Check,
+  Video
 } from 'lucide-react';
 
 interface Department {
@@ -83,6 +85,7 @@ export default function JNTUH() {
   const [processingStage, setProcessingStage] = useState('');
   const [copied, setCopied] = useState(false);
   const [sessionId] = useState(getSessionId);
+  const [showResources, setShowResources] = useState(false);
 
   const saveToHistory = async (department: string, subject: string, analysisResult: string) => {
     try {
@@ -413,24 +416,35 @@ export default function JNTUH() {
                         Comprehensive analysis with hit ratios, confidence levels & action plans
                       </CardDescription>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleCopyResult}
-                      className="gap-2"
-                    >
-                      {copied ? (
-                        <>
-                          <Check className="h-4 w-4" />
-                          Copied
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="h-4 w-4" />
-                          Copy
-                        </>
-                      )}
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => setShowResources(true)}
+                        className="gap-2"
+                      >
+                        <Video className="h-4 w-4" />
+                        Find Resources
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleCopyResult}
+                        className="gap-2"
+                      >
+                        {copied ? (
+                          <>
+                            <Check className="h-4 w-4" />
+                            Copied
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="h-4 w-4" />
+                            Copy
+                          </>
+                        )}
+                      </Button>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -443,6 +457,13 @@ export default function JNTUH() {
       </main>
 
       <Footer />
+      
+      <LearningResources
+        open={showResources}
+        onOpenChange={setShowResources}
+        topic={query}
+        context={selectedDepartment?.fullName}
+      />
     </div>
   );
 }
