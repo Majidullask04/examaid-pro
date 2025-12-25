@@ -254,13 +254,15 @@ export function ResourceResults({
                   key={index} 
                   className="hover:shadow-md transition-shadow group"
                 >
-                  <CardContent className="p-4 flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3 min-w-0">
-                      {getSourceIcon(article.source)}
-                      <div className="min-w-0">
-                        <h4 className="font-medium text-sm truncate">{article.title}</h4>
+                  <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-start gap-3 min-w-0">
+                      <div className="flex-shrink-0 mt-0.5">
+                        {getSourceIcon(article.source)}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h4 className="font-medium text-sm line-clamp-2">{article.title}</h4>
                         {article.description && (
-                          <p className="text-xs text-muted-foreground truncate">
+                          <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
                             {article.description}
                           </p>
                         )}
@@ -268,14 +270,14 @@ export function ResourceResults({
                           href={article.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-1"
+                          className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-2"
                         >
                           <ExternalLink className="h-3 w-3" />
                           Open article
                         </a>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
+                    <div className="flex items-center gap-2 flex-shrink-0 self-end sm:self-center">
                       <Button
                         variant="ghost"
                         size="icon"
