@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
-import { BookOpen, User, LogOut, Settings } from 'lucide-react';
+import { BookOpen, User, LogOut, Settings, GraduationCap } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,6 +24,10 @@ export function Header() {
         <nav className="hidden md:flex items-center gap-6">
           <Link to="/subjects" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
             Subjects
+          </Link>
+          <Link to="/jntuh" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+            <GraduationCap className="h-4 w-4" />
+            JNTUH R22
           </Link>
           {isAdmin && (
             <Link to="/admin" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
