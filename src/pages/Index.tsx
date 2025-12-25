@@ -59,13 +59,13 @@ export default function Index() {
               
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
                 <Button size="lg" asChild className="gap-2 w-full sm:w-auto">
-                  <Link to="/subjects">
-                    Start Learning
+                  <Link to="/jntuh">
+                    JNTUH R22 Analysis
                     <ArrowRight className="h-4 w-4" />
                   </Link>
                 </Button>
                 <Button size="lg" variant="outline" asChild className="w-full sm:w-auto">
-                  <Link to="/auth">Create Account</Link>
+                  <Link to="/subjects">Browse All Subjects</Link>
                 </Button>
               </div>
             </div>
