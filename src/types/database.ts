@@ -45,3 +45,22 @@ export interface UserRole {
   role: AppRole;
   created_at: string;
 }
+
+export interface StudyNote {
+  id: string;
+  user_id: string;
+  title: string;
+  content: string | null;
+  topic: string | null;
+  resources: ResourceItem[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ResourceItem {
+  title: string;
+  url: string;
+  source: string;
+  type: 'video' | 'article';
+  description?: string;
+}
