@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      jntuh_analysis_history: {
+        Row: {
+          created_at: string
+          department: string
+          id: string
+          result: string
+          session_id: string
+          subject: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          department: string
+          id?: string
+          result: string
+          session_id: string
+          subject: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          department?: string
+          id?: string
+          result?: string
+          session_id?: string
+          subject?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string

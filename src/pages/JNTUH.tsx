@@ -1,12 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-
+import { MarkdownRenderer } from '@/components/MarkdownRenderer';
+import { AnalysisHistory } from '@/components/AnalysisHistory';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { 
   Cpu, 
@@ -18,12 +19,13 @@ import {
   BrainCircuit, 
   Database, 
   Bot,
-  Search,
   ArrowLeft,
   Loader2,
   Sparkles,
   GraduationCap,
-  BookOpen
+  BookOpen,
+  Copy,
+  Check
 } from 'lucide-react';
 
 interface Department {
@@ -63,12 +65,74 @@ const getQuickSubjects = (deptId: string): string[] => {
   return quickSubjectsMap[deptId] || ['Data Structures', 'Algorithms', 'Programming'];
 };
 
+// Generate or retrieve session ID for anonymous history tracking
+const getSessionId = (): string => {
+  let sessionId = localStorage.getItem('jntuh_session_id');
+  if (!sessionId) {
+    sessionId = 'session_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
+    localStorage.setItem('jntuh_session_id', sessionId);
+  }
+  return sessionId;
+};
+
 export default function JNTUH() {
   const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
   const [query, setQuery] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [result, setResult] = useState('');
   const [processingStage, setProcessingStage] = useState('');
+  const [copied, setCopied] = useState(false);
+  const [sessionId] = useState(getSessionId);
+
+  const saveToHistory = async (department: string, subject: string, analysisResult: string) => {
+    try {
+      const { error } = await supabase
+        .from('jntuh_analysis_history')
+        .insert({
+          session_id: sessionId,
+          department,
+          subject,
+          result: analysisResult,
+        });
+
+      if (error) {
+        console.error('Error saving to history:', error);
+        // Fallback to localStorage
+        const localHistory = JSON.parse(localStorage.getItem('jntuh_history') || '[]');
+        localHistory.unshift({
+          id: Date.now().toString(),
+          department,
+          subject,
+          result: analysisResult,
+          created_at: new Date().toISOString(),
+        });
+        localStorage.setItem('jntuh_history', JSON.stringify(localHistory.slice(0, 20)));
+      }
+    } catch (error) {
+      console.error('Error saving history:', error);
+    }
+  };
+
+  const handleLoadHistory = (item: { department: string; subject: string; result: string }) => {
+    const dept = departments.find(d => d.name === item.department || d.id === item.department);
+    if (dept) {
+      setSelectedDepartment(dept);
+    }
+    setQuery(item.subject);
+    setResult(item.result);
+    toast.success('Previous analysis loaded');
+  };
+
+  const handleCopyResult = async () => {
+    try {
+      await navigator.clipboard.writeText(result);
+      setCopied(true);
+      toast.success('Copied to clipboard');
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error('Failed to copy');
+    }
+  };
 
   const handleSearch = async () => {
     if (!query.trim() || !selectedDepartment) {
@@ -78,12 +142,11 @@ export default function JNTUH() {
 
     setIsProcessing(true);
     setResult('');
-    setProcessingStage('Stage 1: Searching latest information...');
+    setProcessingStage('Stage 1: Researching syllabus & patterns...');
 
     try {
       const enhancedQuery = `JNTUH R22 ${selectedDepartment.fullName} - High probability exam analysis for all units: ${query}. Focus on most frequently asked questions and important topics across all units.`;
 
-      // Use direct fetch for proper streaming support
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-explain`, {
         method: 'POST',
         headers: {
@@ -134,13 +197,13 @@ export default function JNTUH() {
                 setResult(fullText);
                 
                 if (fullText.length > 100 && stageCount === 0) {
-                  setProcessingStage('Stage 2: Analyzing concepts...');
+                  setProcessingStage('Stage 2: Deep pattern analysis...');
                   stageCount = 1;
                 } else if (fullText.length > 500 && stageCount === 1) {
-                  setProcessingStage('Stage 3: Building exam strategy...');
+                  setProcessingStage('Stage 3: Building action plan...');
                   stageCount = 2;
                 } else if (fullText.length > 1000 && stageCount === 2) {
-                  setProcessingStage('Final: Generating response...');
+                  setProcessingStage('Finalizing recommendations...');
                   stageCount = 3;
                 }
               }
@@ -149,6 +212,11 @@ export default function JNTUH() {
             }
           }
         }
+      }
+
+      // Save to history after completion
+      if (fullText.trim()) {
+        await saveToHistory(selectedDepartment.name, query, fullText);
       }
 
       setProcessingStage('');
@@ -185,7 +253,10 @@ export default function JNTUH() {
         {!selectedDepartment ? (
           // Department Selection Grid
           <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-center">Select Your B.Tech Department</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold">Select Your B.Tech Department</h2>
+              <AnalysisHistory sessionId={sessionId} onLoadHistory={handleLoadHistory} />
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {departments.map((dept) => (
                 <Card 
@@ -215,23 +286,26 @@ export default function JNTUH() {
           // Search Interface
           <div className="max-w-4xl mx-auto space-y-6">
             {/* Back Button and Department Info */}
-            <div className="flex items-center gap-4">
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => {
-                  setSelectedDepartment(null);
-                  setQuery('');
-                  setResult('');
-                }}
-              >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Departments
-              </Button>
-              <Badge variant="secondary" className={`${selectedDepartment.color} border`}>
-                <selectedDepartment.icon className="h-4 w-4 mr-1" />
-                {selectedDepartment.name} - R22
-              </Badge>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => {
+                    setSelectedDepartment(null);
+                    setQuery('');
+                    setResult('');
+                  }}
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back
+                </Button>
+                <Badge variant="secondary" className={`${selectedDepartment.color} border`}>
+                  <selectedDepartment.icon className="h-4 w-4 mr-1" />
+                  {selectedDepartment.name} - R22
+                </Badge>
+              </div>
+              <AnalysisHistory sessionId={sessionId} onLoadHistory={handleLoadHistory} />
             </div>
 
             {/* Usage Guide */}
@@ -245,8 +319,8 @@ export default function JNTUH() {
                     <h3 className="font-medium text-sm">How to use</h3>
                     <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
                       <li>Click a quick subject button below OR type your subject/topic</li>
-                      <li>Click "Analyze with AI" to start the 4-stage analysis</li>
-                      <li>Get high-probability questions for all units</li>
+                      <li>Click "Analyze with AI" to start the 3-stage analysis</li>
+                      <li>Get hit ratios, confidence levels, and study action plans</li>
                     </ol>
                   </div>
                 </div>
@@ -305,7 +379,7 @@ export default function JNTUH() {
                   ) : (
                     <>
                       <Sparkles className="h-4 w-4" />
-                      Analyze with AI (3-Stage + DeepSeek R1)
+                      Analyze with AI (3-Stage Analysis)
                     </>
                   )}
                 </Button>
@@ -329,20 +403,38 @@ export default function JNTUH() {
             {result && (
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Sparkles className="h-5 w-5 text-primary" />
-                    AI Analysis Result
-                  </CardTitle>
-                  <CardDescription>
-                    Comprehensive analysis with 3-stage processing + DeepSeek R1 reasoning
-                  </CardDescription>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        <Sparkles className="h-5 w-5 text-primary" />
+                        AI Analysis Result
+                      </CardTitle>
+                      <CardDescription>
+                        Comprehensive analysis with hit ratios, confidence levels & action plans
+                      </CardDescription>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleCopyResult}
+                      className="gap-2"
+                    >
+                      {copied ? (
+                        <>
+                          <Check className="h-4 w-4" />
+                          Copied
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="h-4 w-4" />
+                          Copy
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="prose prose-sm dark:prose-invert max-w-none">
-                    <div className="whitespace-pre-wrap text-sm leading-relaxed">
-                      {result}
-                    </div>
-                  </div>
+                  <MarkdownRenderer content={result} />
                 </CardContent>
               </Card>
             )}
