@@ -61,10 +61,10 @@ export default function Subjects() {
           <div className="mb-8">
             <div className="flex items-center gap-3 mb-2">
               <BookOpen className="h-8 w-8 text-primary" />
-              <h1 className="text-3xl md:text-4xl font-bold">Subjects</h1>
+              <h1 className="text-3xl md:text-4xl font-bold">📚 Learning Hub</h1>
             </div>
             <p className="text-muted-foreground">
-              Choose a subject to start studying. Each subject contains organized units with high-probability exam questions.
+              Find the best learning resources - videos, articles, and AI-powered explanations for each topic.
             </p>
           </div>
 
