@@ -109,6 +109,39 @@ export type Database = {
           },
         ]
       }
+      study_notes: {
+        Row: {
+          content: string | null
+          created_at: string
+          id: string
+          resources: Json | null
+          title: string
+          topic: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          id?: string
+          resources?: Json | null
+          title: string
+          topic?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          id?: string
+          resources?: Json | null
+          title?: string
+          topic?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       subjects: {
         Row: {
           created_at: string
