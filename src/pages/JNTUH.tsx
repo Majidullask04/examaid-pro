@@ -640,7 +640,7 @@ export default function JNTUH() {
       <LearningResources
         open={showResources}
         onOpenChange={setShowResources}
-        topic={query}
+        topic={query.trim() || (selectedDepartment ? `${selectedDepartment.fullName} key topics` : 'study topics')}
         context={selectedDepartment?.fullName}
       />
     </div>
