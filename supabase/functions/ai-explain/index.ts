@@ -6,21 +6,21 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const LOVABLE_AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
+const DEEPSEEK_API_URL = "https://api.deepseek.com/chat/completions";
 
 // Stage 1: Initial research and context gathering
 async function stage1_Research(query: string, apiKey: string): Promise<string> {
   console.log("=== STAGE 1: Research & Context ===");
   
   try {
-    const response = await fetch(LOVABLE_AI_URL, {
+    const response = await fetch(DEEPSEEK_API_URL, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'deepseek-chat',
         messages: [
           {
             role: 'system',
@@ -110,14 +110,14 @@ Generate:
   }
 
   try {
-    const response = await fetch(LOVABLE_AI_URL, {
+    const response = await fetch(DEEPSEEK_API_URL, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-pro',
+        model: 'deepseek-chat',
         messages: [
           {
             role: 'system',
@@ -291,14 +291,14 @@ Generate a concise revision guide with proper formatting.
 Include quick revision points, formulas, and exam tips.`;
   }
 
-  const response = await fetch(LOVABLE_AI_URL, {
+  const response = await fetch(DEEPSEEK_API_URL, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'google/gemini-2.5-pro',
+      model: 'deepseek-chat',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }
@@ -317,10 +317,10 @@ serve(async (req) => {
 
   try {
     const { question, answer, type } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    const DEEPSEEK_API_KEY = Deno.env.get('DEEPSEEK_API_KEY');
     
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    if (!DEEPSEEK_API_KEY) {
+      throw new Error("DEEPSEEK_API_KEY is not configured");
     }
 
     console.log(`\n========================================`);
@@ -330,10 +330,10 @@ serve(async (req) => {
 
     // Stage 1: Research
     const searchQuery = type === 'summary' ? question.slice(0, 500) : question;
-    const stage1 = await stage1_Research(searchQuery, LOVABLE_API_KEY);
+    const stage1 = await stage1_Research(searchQuery, DEEPSEEK_API_KEY);
     
-    // Stage 2: Analysis with Pro model
-    const stage2 = await stage2_Analysis(question, answer, stage1, type, LOVABLE_API_KEY);
+    // Stage 2: Analysis
+    const stage2 = await stage2_Analysis(question, answer, stage1, type, DEEPSEEK_API_KEY);
 
     // Stage 3: Final Synthesis with streaming
     const response = await stage3_Synthesis(
@@ -342,12 +342,12 @@ serve(async (req) => {
       stage1,
       stage2,
       type, 
-      LOVABLE_API_KEY
+      DEEPSEEK_API_KEY
     );
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Lovable AI error:', response.status, errorText);
+      console.error('DeepSeek API error:', response.status, errorText);
       
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }), {
@@ -355,14 +355,8 @@ serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Usage limit reached. Please add credits to continue." }), {
-          status: 402,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
       
-      throw new Error(`AI API error: ${response.status} - ${errorText}`);
+      throw new Error(`DeepSeek API error: ${response.status} - ${errorText}`);
     }
 
     console.log("All stages complete. Streaming final response...");

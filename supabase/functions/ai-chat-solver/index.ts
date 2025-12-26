@@ -47,6 +47,8 @@ const EXAM_SYSTEM_PROMPT = `You are an expert JNTUH exam preparation assistant. 
 
 Remember: Students will write these answers directly on their exam papers, so be precise and well-structured.`;
 
+const DEEPSEEK_API_URL = 'https://api.deepseek.com/chat/completions';
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -55,10 +57,10 @@ serve(async (req) => {
 
   try {
     const { question, messages = [] } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    const DEEPSEEK_API_KEY = Deno.env.get('DEEPSEEK_API_KEY');
     
-    if (!LOVABLE_API_KEY) {
-      console.error('LOVABLE_API_KEY is not configured');
+    if (!DEEPSEEK_API_KEY) {
+      console.error('DEEPSEEK_API_KEY is not configured');
       throw new Error('AI service is not configured');
     }
 
@@ -75,15 +77,15 @@ serve(async (req) => {
       { role: 'user', content: question }
     ];
 
-    // Use Lovable AI Gateway with streaming
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    // Use DeepSeek V3 API with streaming
+    const response = await fetch(DEEPSEEK_API_URL, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'deepseek-chat',
         messages: conversationMessages,
         stream: true,
       }),
@@ -91,7 +93,7 @@ serve(async (req) => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('AI Gateway error:', response.status, errorText);
+      console.error('DeepSeek API error:', response.status, errorText);
       
       if (response.status === 429) {
         return new Response(
@@ -99,14 +101,8 @@ serve(async (req) => {
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: 'AI credits exhausted. Please add credits to continue.' }),
-          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
       
-      throw new Error(`AI Gateway error: ${response.status}`);
+      throw new Error(`DeepSeek API error: ${response.status}`);
     }
 
     console.log('Streaming response started');
