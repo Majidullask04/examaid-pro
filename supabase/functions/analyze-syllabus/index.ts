@@ -102,13 +102,21 @@ Be thorough and extract EVERY topic mentioned in the syllabus image.`;
             { type: 'text', text: visionPrompt }
           ]
         }],
-        max_tokens: 4000,
+        max_tokens: 2500, // Reduced to stay within credit limits
       }),
     });
 
     if (!visionResponse.ok) {
       const errorText = await visionResponse.text();
       console.error('Vision API error:', visionResponse.status, errorText);
+      
+      if (visionResponse.status === 402) {
+        return new Response(
+          JSON.stringify({ error: 'OpenRouter credits insufficient. Please add credits at https://openrouter.ai/settings/credits' }),
+          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
       return new Response(
         JSON.stringify({ error: `Vision API error: ${visionResponse.status}` }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -193,7 +201,7 @@ Be specific, practical, and focused on exam success. Use emojis for visual clari
           content: analysisPrompt
         }],
         stream: true,
-        max_tokens: 8000,
+        max_tokens: 4000, // Reduced from 8000
         reasoning: { enabled: true },
       }),
     });
@@ -201,6 +209,14 @@ Be specific, practical, and focused on exam success. Use emojis for visual clari
     if (!analysisResponse.ok) {
       const errorText = await analysisResponse.text();
       console.error('Analysis API error:', analysisResponse.status, errorText);
+      
+      if (analysisResponse.status === 402) {
+        return new Response(
+          JSON.stringify({ error: 'OpenRouter credits insufficient. Please add credits at https://openrouter.ai/settings/credits' }),
+          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
       return new Response(
         JSON.stringify({ error: `Analysis API error: ${analysisResponse.status}` }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
