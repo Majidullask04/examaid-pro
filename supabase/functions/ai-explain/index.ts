@@ -6,21 +6,25 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const DEEPSEEK_API_URL = "https://api.deepseek.com/chat/completions";
+const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
+
+const openRouterHeaders = (apiKey: string) => ({
+  'Authorization': `Bearer ${apiKey}`,
+  'Content-Type': 'application/json',
+  'HTTP-Referer': 'https://jntuh-exam-prep.lovable.app',
+  'X-Title': 'JNTUH Exam Prep',
+});
 
 // Stage 1: Initial research and context gathering
 async function stage1_Research(query: string, apiKey: string): Promise<string> {
   console.log("=== STAGE 1: Research & Context ===");
   
   try {
-    const response = await fetch(DEEPSEEK_API_URL, {
+    const response = await fetch(OPENROUTER_API_URL, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
+      headers: openRouterHeaders(apiKey),
       body: JSON.stringify({
-        model: 'deepseek-chat',
+        model: 'deepseek/deepseek-r1-0528:free',
         messages: [
           {
             role: 'system',
@@ -110,14 +114,11 @@ Generate:
   }
 
   try {
-    const response = await fetch(DEEPSEEK_API_URL, {
+    const response = await fetch(OPENROUTER_API_URL, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
+      headers: openRouterHeaders(apiKey),
       body: JSON.stringify({
-        model: 'deepseek-chat',
+        model: 'deepseek/deepseek-r1-0528:free',
         messages: [
           {
             role: 'system',
@@ -291,14 +292,11 @@ Generate a concise revision guide with proper formatting.
 Include quick revision points, formulas, and exam tips.`;
   }
 
-  const response = await fetch(DEEPSEEK_API_URL, {
+  const response = await fetch(OPENROUTER_API_URL, {
     method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
+    headers: openRouterHeaders(apiKey),
     body: JSON.stringify({
-      model: 'deepseek-chat',
+      model: 'deepseek/deepseek-r1-0528:free',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }
@@ -317,10 +315,10 @@ serve(async (req) => {
 
   try {
     const { question, answer, type } = await req.json();
-    const DEEPSEEK_API_KEY = Deno.env.get('DEEPSEEK_API_KEY');
+    const OPENROUTER_API_KEY = Deno.env.get('OPENROUTER_API_KEY');
     
-    if (!DEEPSEEK_API_KEY) {
-      throw new Error("DEEPSEEK_API_KEY is not configured");
+    if (!OPENROUTER_API_KEY) {
+      throw new Error("OPENROUTER_API_KEY is not configured");
     }
 
     console.log(`\n========================================`);
@@ -330,10 +328,10 @@ serve(async (req) => {
 
     // Stage 1: Research
     const searchQuery = type === 'summary' ? question.slice(0, 500) : question;
-    const stage1 = await stage1_Research(searchQuery, DEEPSEEK_API_KEY);
+    const stage1 = await stage1_Research(searchQuery, OPENROUTER_API_KEY);
     
     // Stage 2: Analysis
-    const stage2 = await stage2_Analysis(question, answer, stage1, type, DEEPSEEK_API_KEY);
+    const stage2 = await stage2_Analysis(question, answer, stage1, type, OPENROUTER_API_KEY);
 
     // Stage 3: Final Synthesis with streaming
     const response = await stage3_Synthesis(
@@ -342,12 +340,19 @@ serve(async (req) => {
       stage1,
       stage2,
       type, 
-      DEEPSEEK_API_KEY
+      OPENROUTER_API_KEY
     );
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('DeepSeek API error:', response.status, errorText);
+      console.error('OpenRouter API error:', response.status, errorText);
+      
+      if (response.status === 401) {
+        return new Response(JSON.stringify({ error: "OpenRouter authentication failed. Please verify your API key." }), {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
       
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }), {
@@ -356,7 +361,7 @@ serve(async (req) => {
         });
       }
       
-      throw new Error(`DeepSeek API error: ${response.status} - ${errorText}`);
+      throw new Error(`OpenRouter API error: ${response.status} - ${errorText}`);
     }
 
     console.log("All stages complete. Streaming final response...");
