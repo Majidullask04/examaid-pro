@@ -156,7 +156,7 @@ export default function JNTUH() {
 
     setSyllabusProcessing(true);
     setResult('');
-    setSyllabusStage('Stage 1: Extracting syllabus structure...');
+    setSyllabusStage('Stage 1: Extracting syllabus with Gemini Vision...');
 
     try {
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analyze-syllabus`, {
@@ -206,20 +206,18 @@ export default function JNTUH() {
               const parsed = JSON.parse(data);
               
               if (parsed.stage === 'syllabus_extracted') {
-                setSyllabusStage('Stage 2: Searching previous papers (2019-2024)...');
+                setSyllabusStage('Stage 2: Searching JNTUH papers (2019-2024)...');
                 syllabusExtracted = true;
-                fullText = parsed.content + '\n\n---\n\n';
-                setResult(fullText);
               } else if (parsed.stage === 'web_search_complete') {
-                setSyllabusStage('Stage 3: Analyzing year-wise patterns & hit ratios...');
+                setSyllabusStage('Stage 3: DeepSeek R1 reasoning (30-60s)...');
               } else if (parsed.stage === 'analysis' && parsed.content) {
                 fullText += parsed.content;
                 setResult(fullText);
                 
-                if (fullText.includes('HIT RATIO') && syllabusExtracted) {
-                  setSyllabusStage('Stage 4: Generating confidence levels...');
-                } else if (fullText.includes('SUGGESTED APPROACH')) {
-                  setSyllabusStage('Stage 5: Building study strategy...');
+                if (fullText.includes('HIT RATIO') || fullText.includes('YEAR-WISE')) {
+                  setSyllabusStage('Stage 4: Building hit ratio tables...');
+                } else if (fullText.includes('SUGGESTED APPROACH') || fullText.includes('Phase 1')) {
+                  setSyllabusStage('Stage 5: Generating study strategy...');
                 }
               }
             } catch {

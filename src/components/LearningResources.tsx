@@ -100,15 +100,15 @@ export function LearningResources({ open, onOpenChange, topic, context }: Learni
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-lg">
-        <SheetHeader>
-          <SheetTitle className="flex items-center gap-2">
+        <div className="space-y-1.5 text-center sm:text-left">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
             <Search className="h-5 w-5 text-primary" />
             Learning Resources
-          </SheetTitle>
-          <SheetDescription>
+          </h2>
+          <p className="text-sm text-muted-foreground">
             Find videos and articles for: <span className="font-medium text-foreground">{topic}</span>
-          </SheetDescription>
-        </SheetHeader>
+          </p>
+        </div>
 
         <div className="mt-6">
           {!hasSearched ? (
