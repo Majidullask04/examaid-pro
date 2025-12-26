@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { MarkdownRenderer } from '@/components/MarkdownRenderer';
 import { AnalysisHistory } from '@/components/AnalysisHistory';
 import { LearningResources } from '@/components/LearningResources';
+import { SyllabusUploader } from '@/components/SyllabusUploader';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
@@ -28,8 +29,11 @@ import {
   BookOpen,
   Copy,
   Check,
-  Video
+  Video,
+  ImageIcon,
+  FileText
 } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
 
 interface Department {
   id: string;
@@ -88,6 +92,9 @@ export default function JNTUH() {
   const [copied, setCopied] = useState(false);
   const [sessionId] = useState(getSessionId);
   const [showResources, setShowResources] = useState(false);
+  const [isSyllabusMode, setIsSyllabusMode] = useState(true);
+  const [syllabusProcessing, setSyllabusProcessing] = useState(false);
+  const [syllabusStage, setSyllabusStage] = useState('');
 
   const saveToHistory = async (department: string, subject: string, analysisResult: string) => {
     try {
@@ -137,6 +144,101 @@ export default function JNTUH() {
       setTimeout(() => setCopied(false), 2000);
     } catch {
       toast.error('Failed to copy');
+    }
+  };
+
+  // Handle syllabus image analysis
+  const handleSyllabusAnalysis = async (imageBase64: string, studyGoal: 'pass' | 'high_marks') => {
+    if (!selectedDepartment) {
+      toast.error('Please select a department first');
+      return;
+    }
+
+    setSyllabusProcessing(true);
+    setResult('');
+    setSyllabusStage('Stage 1: Extracting syllabus structure...');
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analyze-syllabus`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          'Content-Type': 'application/json',
+          'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          'x-session-id': sessionId,
+        },
+        body: JSON.stringify({
+          imageBase64,
+          department: selectedDepartment.fullName,
+          studyGoal,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`API error: ${response.status} - ${errorText}`);
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('No response body');
+      }
+
+      const decoder = new TextDecoder();
+      let fullText = '';
+      let buffer = '';
+      let syllabusExtracted = false;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6).trim();
+            if (data === '[DONE]') continue;
+
+            try {
+              const parsed = JSON.parse(data);
+              
+              if (parsed.stage === 'syllabus_extracted') {
+                setSyllabusStage('Stage 2: Searching model papers & analyzing patterns...');
+                syllabusExtracted = true;
+                // Show extracted syllabus first
+                fullText = parsed.content + '\n\n---\n\n## 📊 EXAM PREPARATION ANALYSIS\n\n';
+                setResult(fullText);
+              } else if (parsed.stage === 'analysis' && parsed.content) {
+                fullText += parsed.content;
+                setResult(fullText);
+                
+                if (fullText.length > 2000 && syllabusExtracted) {
+                  setSyllabusStage('Stage 3: Building study plan...');
+                }
+              }
+            } catch {
+              // Skip invalid JSON
+            }
+          }
+        }
+      }
+
+      // Save to history after completion
+      if (fullText.trim()) {
+        await saveToHistory(selectedDepartment.name, `Syllabus Analysis (${studyGoal})`, fullText);
+      }
+
+      setSyllabusStage('');
+      toast.success('Syllabus analysis complete!');
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error('Failed to analyze syllabus. Please try again.');
+    } finally {
+      setSyllabusProcessing(false);
+      setSyllabusStage('');
     }
   };
 
@@ -314,96 +416,165 @@ export default function JNTUH() {
               <AnalysisHistory sessionId={sessionId} onLoadHistory={handleLoadHistory} />
             </div>
 
-            {/* Usage Guide */}
-            <Card className="bg-muted/50 border-dashed">
+            {/* Mode Toggle */}
+            <Card className="bg-muted/30">
               <CardContent className="py-4">
-                <div className="flex items-start gap-3">
-                  <div className="p-2 rounded-lg bg-primary/10">
-                    <BookOpen className="h-5 w-5 text-primary" />
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div>
+                    <h3 className="font-semibold text-sm mb-1">Analysis Mode</h3>
+                    <p className="text-xs text-muted-foreground">
+                      Choose how you want to analyze your syllabus
+                    </p>
                   </div>
-                  <div className="space-y-1">
-                    <h3 className="font-medium text-sm">How to use</h3>
-                    <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
-                      <li>Click a quick subject button below OR type your subject/topic</li>
-                      <li>Click "Analyze with AI" to start the 3-stage analysis</li>
-                      <li>Get hit ratios, confidence levels, and study action plans</li>
-                    </ol>
+                  <div className="flex gap-2">
+                    <Button
+                      variant={isSyllabusMode ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setIsSyllabusMode(true)}
+                      disabled={isProcessing || syllabusProcessing}
+                      className="gap-2"
+                    >
+                      <ImageIcon className="h-4 w-4" />
+                      Upload Syllabus
+                    </Button>
+                    <Button
+                      variant={!isSyllabusMode ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setIsSyllabusMode(false)}
+                      disabled={isProcessing || syllabusProcessing}
+                      className="gap-2"
+                    >
+                      <FileText className="h-4 w-4" />
+                      Type Query
+                    </Button>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Quick Subject Buttons */}
-            <div className="space-y-3">
-              <h3 className="text-sm font-medium text-muted-foreground">Quick Select Common Subjects:</h3>
-              <div className="flex flex-wrap gap-2">
-                {getQuickSubjects(selectedDepartment.id).map((subject) => (
-                  <Button
-                    key={subject}
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setQuery(subject + ' high probability questions for all units')}
-                    disabled={isProcessing}
-                    className="text-xs"
-                  >
-                    {subject}
-                  </Button>
-                ))}
-              </div>
-            </div>
-
-            {/* Search Card */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BookOpen className="h-5 w-5 text-primary" />
-                  {selectedDepartment.fullName}
-                </CardTitle>
-                <CardDescription>
-                  Enter your subject or topic to analyze high-probability questions across all units
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Textarea
-                  placeholder="e.g., 'Operating Systems complete analysis' or 'DBMS important questions for all units' or 'Data Structures high probability topics'"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  className="min-h-[100px] resize-none"
-                  disabled={isProcessing}
-                />
-                <Button 
-                  onClick={handleSearch} 
-                  disabled={isProcessing || !query.trim()}
-                  className="w-full gap-2"
-                  size="lg"
-                >
-                  {isProcessing ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      {processingStage || 'Processing...'}
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="h-4 w-4" />
-                      Analyze with AI (3-Stage Analysis)
-                    </>
-                  )}
-                </Button>
-
-                {/* Processing Stages Indicator */}
-                {isProcessing && (
-                  <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                    <div className="flex gap-1">
-                      <div className={`h-2 w-2 rounded-full ${processingStage.includes('1') ? 'bg-primary animate-pulse' : 'bg-muted'}`} />
-                      <div className={`h-2 w-2 rounded-full ${processingStage.includes('2') ? 'bg-primary animate-pulse' : 'bg-muted'}`} />
-                      <div className={`h-2 w-2 rounded-full ${processingStage.includes('3') ? 'bg-primary animate-pulse' : 'bg-muted'}`} />
-                      <div className={`h-2 w-2 rounded-full ${processingStage.includes('Final') ? 'bg-primary animate-pulse' : 'bg-muted'}`} />
+            {isSyllabusMode ? (
+              /* Syllabus Upload Mode */
+              <div className="space-y-6">
+                <Card className="bg-muted/50 border-dashed">
+                  <CardContent className="py-4">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 rounded-lg bg-primary/10">
+                        <ImageIcon className="h-5 w-5 text-primary" />
+                      </div>
+                      <div className="space-y-1">
+                        <h3 className="font-medium text-sm">How it works</h3>
+                        <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
+                          <li>Upload or take a photo of your JNTUH syllabus</li>
+                          <li>Choose your goal: "Just Pass" or "High Marks"</li>
+                          <li>AI analyzes and creates a personalized study plan</li>
+                        </ol>
+                      </div>
                     </div>
-                    <span>{processingStage}</span>
+                  </CardContent>
+                </Card>
+
+                <SyllabusUploader 
+                  onAnalyze={handleSyllabusAnalysis}
+                  isProcessing={syllabusProcessing}
+                  processingStage={syllabusStage}
+                />
+              </div>
+            ) : (
+              /* Text Query Mode */
+              <div className="space-y-6">
+                {/* Usage Guide */}
+                <Card className="bg-muted/50 border-dashed">
+                  <CardContent className="py-4">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 rounded-lg bg-primary/10">
+                        <BookOpen className="h-5 w-5 text-primary" />
+                      </div>
+                      <div className="space-y-1">
+                        <h3 className="font-medium text-sm">How to use</h3>
+                        <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
+                          <li>Click a quick subject button below OR type your subject/topic</li>
+                          <li>Click "Analyze with AI" to start the 3-stage analysis</li>
+                          <li>Get hit ratios, confidence levels, and study action plans</li>
+                        </ol>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Quick Subject Buttons */}
+                <div className="space-y-3">
+                  <h3 className="text-sm font-medium text-muted-foreground">Quick Select Common Subjects:</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {getQuickSubjects(selectedDepartment.id).map((subject) => (
+                      <Button
+                        key={subject}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setQuery(subject + ' high probability questions for all units')}
+                        disabled={isProcessing}
+                        className="text-xs"
+                      >
+                        {subject}
+                      </Button>
+                    ))}
                   </div>
-                )}
-              </CardContent>
-            </Card>
+                </div>
+
+                {/* Search Card */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <BookOpen className="h-5 w-5 text-primary" />
+                      {selectedDepartment.fullName}
+                    </CardTitle>
+                    <CardDescription>
+                      Enter your subject or topic to analyze high-probability questions across all units
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <Textarea
+                      placeholder="e.g., 'Operating Systems complete analysis' or 'DBMS important questions for all units' or 'Data Structures high probability topics'"
+                      value={query}
+                      onChange={(e) => setQuery(e.target.value)}
+                      className="min-h-[100px] resize-none"
+                      disabled={isProcessing}
+                    />
+                    <Button 
+                      onClick={handleSearch} 
+                      disabled={isProcessing || !query.trim()}
+                      className="w-full gap-2"
+                      size="lg"
+                    >
+                      {isProcessing ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          {processingStage || 'Processing...'}
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="h-4 w-4" />
+                          Analyze with AI (3-Stage Analysis)
+                        </>
+                      )}
+                    </Button>
+
+                    {/* Processing Stages Indicator */}
+                    {isProcessing && (
+                      <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                        <div className="flex gap-1">
+                          <div className={`h-2 w-2 rounded-full ${processingStage.includes('1') ? 'bg-primary animate-pulse' : 'bg-muted'}`} />
+                          <div className={`h-2 w-2 rounded-full ${processingStage.includes('2') ? 'bg-primary animate-pulse' : 'bg-muted'}`} />
+                          <div className={`h-2 w-2 rounded-full ${processingStage.includes('3') ? 'bg-primary animate-pulse' : 'bg-muted'}`} />
+                          <div className={`h-2 w-2 rounded-full ${processingStage.includes('Final') ? 'bg-primary animate-pulse' : 'bg-muted'}`} />
+                        </div>
+                        <span>{processingStage}</span>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
 
             {/* Results */}
             {result && (
