@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.ai-chat-solver]
 verify_jwt = false
+
+[functions.analyze-syllabus]
+verify_jwt = false

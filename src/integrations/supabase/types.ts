@@ -202,6 +202,45 @@ export type Database = {
         }
         Relationships: []
       }
+      syllabus_uploads: {
+        Row: {
+          analysis_result: string | null
+          created_at: string | null
+          department: string
+          extracted_topics: Json | null
+          id: string
+          image_url: string
+          session_id: string
+          study_goal: string | null
+          subject_name: string | null
+          user_id: string | null
+        }
+        Insert: {
+          analysis_result?: string | null
+          created_at?: string | null
+          department: string
+          extracted_topics?: Json | null
+          id?: string
+          image_url: string
+          session_id: string
+          study_goal?: string | null
+          subject_name?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          analysis_result?: string | null
+          created_at?: string | null
+          department?: string
+          extracted_topics?: Json | null
+          id?: string
+          image_url?: string
+          session_id?: string
+          study_goal?: string | null
+          subject_name?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       units: {
         Row: {
           created_at: string
