@@ -94,6 +94,16 @@ serve(async (req) => {
     if (!response.ok) {
       const errorText = await response.text();
       console.error('DeepSeek API error:', response.status, errorText);
+
+      if (response.status === 401) {
+        return new Response(
+          JSON.stringify({
+            error:
+              'DeepSeek authentication failed (invalid API key). Please verify your DeepSeek key and billing/credits in your DeepSeek account.',
+          }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
       
       if (response.status === 429) {
         return new Response(
