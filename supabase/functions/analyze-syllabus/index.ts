@@ -326,6 +326,8 @@ IMPORTANT: Generate output in this EXACT structure. Use ★ for years appeared, 
 
         const decoder = new TextDecoder();
         let buffer = '';
+        let insideThinkTag = false;
+        let pendingContent = '';
 
         while (true) {
           const { done, value } = await reader.read();
@@ -339,22 +341,67 @@ IMPORTANT: Generate output in this EXACT structure. Use ★ for years appeared, 
             if (line.startsWith('data: ')) {
               const data = line.slice(6).trim();
               if (data === '[DONE]') {
+                // Send any remaining content before closing
+                if (pendingContent.trim()) {
+                  controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
+                    stage: 'analysis', 
+                    content: pendingContent 
+                  })}\n\n`));
+                }
                 controller.enqueue(encoder.encode('data: [DONE]\n\n'));
                 continue;
               }
 
               try {
                 const parsed = JSON.parse(data);
-                let content = parsed.choices?.[0]?.delta?.content;
+                const content = parsed.choices?.[0]?.delta?.content;
                 if (content) {
-                  // Clean any think tags from streaming content
-                  content = content.replace(/<think>[\s\S]*?<\/think>/gi, '');
-                  content = content.replace(/<\/?think>/gi, '');
-                  if (content.trim()) {
-                    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
-                      stage: 'analysis', 
-                      content 
-                    })}\n\n`));
+                  pendingContent += content;
+                  
+                  // Process content - handle <think> tags properly for streaming
+                  while (true) {
+                    if (insideThinkTag) {
+                      // Look for closing </think> tag
+                      const closeIndex = pendingContent.indexOf('</think>');
+                      if (closeIndex !== -1) {
+                        // Found closing tag, discard everything up to and including it
+                        pendingContent = pendingContent.substring(closeIndex + 8);
+                        insideThinkTag = false;
+                      } else {
+                        // Still inside think tag, discard all and wait for more
+                        pendingContent = '';
+                        break;
+                      }
+                    } else {
+                      // Look for opening <think> tag
+                      const openIndex = pendingContent.indexOf('<think>');
+                      if (openIndex !== -1) {
+                        // Found opening tag, send content before it
+                        const beforeThink = pendingContent.substring(0, openIndex);
+                        if (beforeThink.trim()) {
+                          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
+                            stage: 'analysis', 
+                            content: beforeThink 
+                          })}\n\n`));
+                        }
+                        pendingContent = pendingContent.substring(openIndex + 7);
+                        insideThinkTag = true;
+                      } else {
+                        // No think tag found, but might have partial tag at end
+                        // Keep last 7 chars in case they're start of <think>
+                        if (pendingContent.length > 7) {
+                          const safeContent = pendingContent.substring(0, pendingContent.length - 7);
+                          if (safeContent.trim()) {
+                            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
+                              stage: 'analysis', 
+                              content: safeContent 
+                            })}\n\n`));
+                          }
+                          pendingContent = pendingContent.substring(pendingContent.length - 7);
+                        }
+                        break;
+                      }
+                    }
                   }
                 }
               } catch {

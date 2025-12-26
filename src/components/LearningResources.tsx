@@ -22,40 +22,23 @@ import {
 
 // Helper function to force open external links in browser (outside of app/webview)
 const openExternalLink = (url: string) => {
-  try {
-    // Method 1: Create and programmatically click an anchor element
-    // This is most reliable for webviews and iframes
-    const link = document.createElement('a');
-    link.href = url;
-    link.target = '_blank';
-    link.rel = 'noopener noreferrer';
-    // Some webviews require the element to be in the DOM
-    link.style.display = 'none';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    // Also try window.open as backup (some browsers block the click)
-    setTimeout(() => {
-      try {
-        // Try with _system target (works in some mobile webviews like Cordova)
-        const win = window.open(url, '_system');
-        if (!win) {
-          window.open(url, '_blank');
-        }
-      } catch {
-        // Silent fail - the anchor click likely worked
-      }
-    }, 100);
-    
-  } catch {
-    // Last resort: copy to clipboard and show toast
-    navigator.clipboard.writeText(url).then(() => {
-      toast.info('Link copied! Paste in your browser to open.');
-    }).catch(() => {
-      toast.error('Could not open link. URL: ' + url);
-    });
+  // Primary method: window.open with features that hint at external browser
+  const newWindow = window.open(url, '_blank', 'noopener,noreferrer,menubar=yes,toolbar=yes,location=yes');
+  
+  if (newWindow) {
+    newWindow.focus();
+    return;
   }
+  
+  // Fallback: Copy to clipboard if popup was blocked
+  navigator.clipboard.writeText(url).then(() => {
+    toast.success('Link copied! Paste in your browser to open.', {
+      duration: 5000,
+    });
+  }).catch(() => {
+    // Final fallback: show the URL in toast
+    toast.info(`Open this URL: ${url}`, { duration: 10000 });
+  });
 };
 
 interface ResourceItem {
