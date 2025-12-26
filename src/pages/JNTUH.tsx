@@ -206,17 +206,20 @@ export default function JNTUH() {
               const parsed = JSON.parse(data);
               
               if (parsed.stage === 'syllabus_extracted') {
-                setSyllabusStage('Stage 2: Searching model papers & analyzing patterns...');
+                setSyllabusStage('Stage 2: Searching previous papers (2019-2024)...');
                 syllabusExtracted = true;
-                // Show extracted syllabus first
-                fullText = parsed.content + '\n\n---\n\n## 📊 EXAM PREPARATION ANALYSIS\n\n';
+                fullText = parsed.content + '\n\n---\n\n';
                 setResult(fullText);
+              } else if (parsed.stage === 'web_search_complete') {
+                setSyllabusStage('Stage 3: Analyzing year-wise patterns & hit ratios...');
               } else if (parsed.stage === 'analysis' && parsed.content) {
                 fullText += parsed.content;
                 setResult(fullText);
                 
-                if (fullText.length > 2000 && syllabusExtracted) {
-                  setSyllabusStage('Stage 3: Building study plan...');
+                if (fullText.includes('HIT RATIO') && syllabusExtracted) {
+                  setSyllabusStage('Stage 4: Generating confidence levels...');
+                } else if (fullText.includes('SUGGESTED APPROACH')) {
+                  setSyllabusStage('Stage 5: Building study strategy...');
                 }
               }
             } catch {
