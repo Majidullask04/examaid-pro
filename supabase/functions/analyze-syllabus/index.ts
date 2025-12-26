@@ -5,6 +5,16 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-session-id',
 };
 
+// Clean extracted text - remove extra special characters
+function cleanText(text: string): string {
+  return text
+    .replace(/[*#@~`|\\^]+/g, '')
+    .replace(/\s{3,}/g, '\n\n')
+    .replace(/[^\S\n]+/g, ' ')
+    .replace(/\n{4,}/g, '\n\n\n')
+    .trim();
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -20,90 +30,44 @@ serve(async (req) => {
       );
     }
 
-    // Get API keys
     const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
     const PERPLEXITY_API_KEY = Deno.env.get('PERPLEXITY_API_KEY');
     const OPENROUTER_API_KEY = Deno.env.get('OPENROUTER_API_KEY');
 
-    if (!GEMINI_API_KEY) {
-      console.error('GEMINI_API_KEY is not configured');
+    if (!GEMINI_API_KEY || !PERPLEXITY_API_KEY || !OPENROUTER_API_KEY) {
+      console.error('Missing API keys');
       return new Response(
-        JSON.stringify({ error: 'Gemini API key not configured' }),
+        JSON.stringify({ error: 'API keys not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    if (!PERPLEXITY_API_KEY) {
-      console.error('PERPLEXITY_API_KEY is not configured');
-      return new Response(
-        JSON.stringify({ error: 'Perplexity API key not configured' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    if (!OPENROUTER_API_KEY) {
-      console.error('OPENROUTER_API_KEY is not configured');
-      return new Response(
-        JSON.stringify({ error: 'OpenRouter API key not configured' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Study goal specific instructions
     const goalInstructions = studyGoal === 'pass' 
-      ? `STUDY GOAL: JUST PASS (Minimum effort for passing marks)
-        - Focus ONLY on high-frequency questions (appeared 3+ times in previous JNTUH exams)
-        - Identify the absolute minimum topics needed to pass each unit
-        - Skip complex derivations - focus on definitions, diagrams, and direct answers
-        - Aim for 2-3 confident answers per unit (enough for 40 marks)
-        - Prioritize topics with simple, memorizable content`
-      : `STUDY GOAL: HIGH MARKS (Aim for 80%+ marks)
-        - Cover ALL important topics comprehensively
-        - Include derivations, proofs, and numerical problems
-        - Prepare for both Part A (short answers) and Part B (essays)
-        - Focus on conceptual understanding for application-based questions
-        - Include diagrams, flowcharts, and detailed explanations`;
+      ? `STUDY GOAL: JUST PASS - Focus on minimum effort for passing. Only high-frequency questions (appeared 3+ times). Skip derivations, focus on definitions and diagrams.`
+      : `STUDY GOAL: HIGH MARKS (80%+) - Cover ALL topics comprehensively. Include derivations, numericals, and conceptual understanding.`;
 
-    // ============================================
-    // STAGE 1: Google AI Studio Vision (Gemini)
-    // ============================================
+    // STAGE 1: Gemini Vision
     console.log('Stage 1: Analyzing syllabus image with Gemini Vision...');
     
-    const visionPrompt = `You are analyzing a JNTUH (Jawaharlal Nehru Technological University, Hyderabad) syllabus image for ${department || 'B.Tech'} department.
+    const visionPrompt = `Extract the complete syllabus from this JNTUH ${department || 'B.Tech'} image.
 
-TASK: Extract the complete syllabus structure from this image.
+For EACH UNIT:
+- Unit number and title
+- All topics listed
+- Key concepts
 
-For EACH UNIT found, extract:
-1. Unit number and title
-2. All topics/subtopics listed
-3. Key concepts mentioned
-4. Any textbook references
-
-Format your response as:
-## EXTRACTED SYLLABUS
-
-### UNIT 1: [Title]
-Topics:
+Format:
+UNIT 1: [Title]
 - Topic 1
 - Topic 2
-- ...
 
-### UNIT 2: [Title]
-Topics:
-- ...
+UNIT 2: [Title]
+- Topic 1
+...
 
-(Continue for all units)
+SUBJECT NAME: [Name]
+TOTAL UNITS: [Number]`;
 
----
-SUBJECT NAME: [Identify the subject from the syllabus]
-TOTAL UNITS: [Number]
-REGULATION: [R22/R18 if visible]
-
-Be thorough and extract EVERY topic mentioned in the syllabus image.`;
-
-    // Prepare image for Google AI Studio format
-    const imageData = imageBase64 || '';
-    
     const visionResponse = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
       {
@@ -112,36 +76,29 @@ Be thorough and extract EVERY topic mentioned in the syllabus image.`;
         body: JSON.stringify({
           contents: [{
             parts: [
-              { 
-                inlineData: { 
-                  mimeType: "image/jpeg", 
-                  data: imageData 
-                } 
-              },
+              { inlineData: { mimeType: "image/jpeg", data: imageBase64 || '' } },
               { text: visionPrompt }
             ]
           }],
-          generationConfig: {
-            maxOutputTokens: 3000,
-          }
+          generationConfig: { maxOutputTokens: 3000 }
         }),
       }
     );
 
     if (!visionResponse.ok) {
       const errorText = await visionResponse.text();
-      console.error('Gemini Vision API error:', visionResponse.status, errorText);
+      console.error('Gemini Vision error:', errorText);
       return new Response(
-        JSON.stringify({ error: `Vision API error: ${visionResponse.status} - ${errorText}` }),
+        JSON.stringify({ error: 'Vision API error' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     const visionData = await visionResponse.json();
-    const extractedSyllabus = visionData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const rawSyllabus = visionData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const extractedSyllabus = cleanText(rawSyllabus);
     
     if (!extractedSyllabus) {
-      console.error('No syllabus content extracted from image');
       return new Response(
         JSON.stringify({ error: 'Could not extract syllabus from image' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -150,13 +107,10 @@ Be thorough and extract EVERY topic mentioned in the syllabus image.`;
     
     console.log('Stage 1 Complete: Syllabus extracted successfully');
 
-    // Extract subject name from syllabus for web search
     const subjectMatch = extractedSyllabus.match(/SUBJECT NAME:\s*(.+)/i);
-    const subjectName = subjectMatch ? subjectMatch[1].trim() : department || 'Engineering Subject';
+    const subjectName = subjectMatch ? subjectMatch[1].trim() : 'Engineering Subject';
 
-    // ============================================
-    // STAGE 2: Perplexity Web Search
-    // ============================================
+    // STAGE 2: Perplexity Web Search - Year-wise Pattern Analysis
     console.log('Stage 2: Searching for JNTUH previous papers with Perplexity...');
 
     let webSearchResults = '';
@@ -173,20 +127,19 @@ Be thorough and extract EVERY topic mentioned in the syllabus image.`;
           model: 'sonar',
           messages: [{
             role: 'user',
-            content: `Find JNTUH previous year question papers, important questions, and exam patterns for:
-            
-Subject: ${subjectName}
-Department: ${department || 'B.Tech'}
-Regulation: R22 (preferred) or R18
+            content: `Find JNTUH previous year question papers for "${subjectName}" (${department}):
 
-Focus on:
-1. Most frequently asked questions from previous JNTUH exams
-2. Important topics that appear repeatedly
-3. Question patterns for Part A (short answers) and Part B (essays)
-4. Any model papers or predicted questions
-5. Weightage of topics across different units
+1. Search questions from years 2019, 2020, 2021, 2022, 2023, 2024
+2. For EACH question/topic, note which years it appeared
+3. Find frequency: how many times each topic appeared across years
+4. Find R22 and R18 regulation papers
+5. Part A vs Part B patterns
 
-Provide specific questions if available, with their frequency of appearance.`
+Format:
+TOPIC/QUESTION | YEARS APPEARED | FREQUENCY
+Example: "Normalization" | 2024, 2023, 2022 | 3 times
+
+Include actual questions with year data.`
           }],
           search_recency_filter: 'year',
         }),
@@ -198,82 +151,87 @@ Provide specific questions if available, with their frequency of appearance.`
         citations = searchData.citations || [];
         console.log('Stage 2 Complete: Web search successful with', citations.length, 'citations');
       } else {
-        const errorText = await searchResponse.text();
-        console.error('Perplexity search error:', searchResponse.status, errorText);
-        webSearchResults = 'Web search unavailable. Proceeding with syllabus analysis only.';
+        webSearchResults = 'Web search unavailable.';
       }
     } catch (searchError) {
       console.error('Perplexity search failed:', searchError);
-      webSearchResults = 'Web search failed. Proceeding with syllabus analysis only.';
+      webSearchResults = 'Web search failed.';
     }
 
-    // ============================================
-    // STAGE 3: DeepSeek R1 Reasoning (Streaming)
-    // ============================================
+    // STAGE 3: DeepSeek R1 - Pattern Analysis & Confidence Levels
     console.log('Stage 3: Generating study plan with DeepSeek R1 reasoning...');
 
-    const analysisPrompt = `You are a JNTUH exam preparation expert with access to both the syllabus and real question paper data.
+    const analysisPrompt = `You are a JNTUH exam pattern analyst. Analyze the syllabus and web search data to create a data-driven study guide.
 
 ${goalInstructions}
 
----
-## EXTRACTED SYLLABUS:
+EXTRACTED SYLLABUS:
 ${extractedSyllabus}
 
----
-## WEB SEARCH RESULTS (Previous Papers & Important Questions):
+WEB SEARCH RESULTS (Previous Papers Data):
 ${webSearchResults}
 
-${citations.length > 0 ? `\n## SOURCES:\n${citations.map((c, i) => `${i + 1}. ${c}`).join('\n')}` : ''}
+${citations.length > 0 ? `SOURCES: ${citations.slice(0, 5).join(', ')}` : ''}
+
+Create this EXACT structure:
+
+## QUESTION PATTERN ANALYSIS METHODOLOGY
+
+Data Collection:
+- Papers analyzed: 2019-2024
+- Total questions reviewed: [estimate from web data]
+- Sources: [list citations]
+
+Analysis Process:
+1. Extracted topics from syllabus
+2. Matched with JNTUH question bank (2019-2024)
+3. Calculated frequency and probability
 
 ---
 
-TASK: Create a comprehensive, data-driven exam preparation guide using BOTH the syllabus AND the real question paper data from web search.
+## YEAR-WISE HIT RATIO ANALYSIS
 
-## 📚 SUBJECT OVERVIEW
-- Subject name and department
-- Total units identified
-- Exam pattern based on previous papers
+| Topic | 2024 | 2023 | 2022 | 2021 | 2020 | Hits | Confidence |
+|-------|------|------|------|------|------|------|------------|
+| [Topic] | Y/N | Y/N | Y/N | Y/N | Y/N | X/5 | XX% |
 
-## 🎯 HIGH PROBABILITY QUESTIONS (PER UNIT)
+(Include 10-15 most important topics)
 
-For each unit, provide:
-### UNIT [X]: [Title]
+---
 
-**🔥 Most Likely Questions (Based on Previous Papers):**
-1. [Actual question from papers] - [Frequency: appeared X times]
-2. [Question] - [Year/source if known]
+## HIGH PROBABILITY QUESTIONS PER UNIT
 
-**📝 Critical Topics (From Web Search Data):**
-- Topic 1: [What to focus on based on paper analysis]
-- Topic 2: [Key formulas/concepts that repeat]
+### UNIT 1: [Title]
+| # | Question | Confidence | Years |
+|---|----------|------------|-------|
+| 1 | [Question from papers] | 90% | 2024, 2023, 2022 |
+| 2 | [Question] | 75% | 2023, 2022 |
+| 3 | [Question] | 60% | 2024 |
 
-**⏱️ Estimated Study Time:** [X hours]
+(Repeat for ALL units - minimum 3 questions per unit with confidence %)
 
-## 📋 STUDY ACTION PLAN
+---
 
-Based on "${studyGoal === 'pass' ? 'Just Pass' : 'High Marks'}" goal and REAL paper patterns:
+## SUGGESTED APPROACH TO TACKLE THIS SUBJECT
 
-### Priority Order (Based on Frequency):
-1. [Most important topic] - [Why]
-2. [Second priority] - [Frequency data]
+### Phase 1: Foundation (Days 1-3)
+- Start with [90%+ confidence topics]
+- Focus: [specific topics]
 
-### Week-wise Preparation:
-- **Week 1:** [Units + specific focus areas]
-- **Week 2:** [Units + specific focus areas]
-- **Revision:** [Strategy based on high-frequency topics]
+### Phase 2: Core (Days 4-7)
+- Cover [60-80% confidence topics]
+- Practice: [specific types]
 
-## 💡 EXAM TIPS (Based on Actual JNTUH Patterns)
-- Part A strategy (based on typical questions)
-- Part B strategy (based on essay patterns)
-- Time management
+### Phase 3: Revision (Days 8-10)
+- Quick review of high-frequency topics
+- Mock tests strategy
 
-## 📊 CONFIDENCE MATRIX
-| Unit | High-Frequency Topics | Question Probability | Study Priority |
-|------|----------------------|---------------------|----------------|
-| 1    | [Topics]             | High/Medium/Low     | ⭐⭐⭐         |
+### Exam Strategy:
+- Part A: [tips based on patterns]
+- Part B: [tips based on patterns]
+- Time: [allocation]
 
-Be specific with actual questions from the web search results. Use emojis for visual clarity.`;
+Use actual questions from web search. Confidence % = (years appeared / 5) * 100.`;
 
     const analysisResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
@@ -285,41 +243,37 @@ Be specific with actual questions from the web search results. Use emojis for vi
       },
       body: JSON.stringify({
         model: 'deepseek/deepseek-r1-0528:free',
-        messages: [{
-          role: 'user',
-          content: analysisPrompt
-        }],
+        messages: [{ role: 'user', content: analysisPrompt }],
         stream: true,
       }),
     });
 
     if (!analysisResponse.ok) {
       const errorText = await analysisResponse.text();
-      console.error('DeepSeek R1 API error:', analysisResponse.status, errorText);
+      console.error('DeepSeek R1 API error:', errorText);
       return new Response(
-        JSON.stringify({ error: `Analysis API error: ${analysisResponse.status}` }),
+        JSON.stringify({ error: 'Analysis API error' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Stream the response with all stages
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
-        // Stage 1: Send extracted syllabus
+        // Stage 1: Cleaned syllabus
         controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
           stage: 'syllabus_extracted', 
           content: extractedSyllabus 
         })}\n\n`));
 
-        // Stage 2: Send web search results
+        // Stage 2: Web search with year data
         controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
           stage: 'web_search_complete', 
           content: webSearchResults,
           citations: citations
         })}\n\n`));
 
-        // Stage 3: Stream DeepSeek R1 analysis
+        // Stage 3: Stream analysis
         const reader = analysisResponse.body?.getReader();
         if (!reader) {
           controller.close();
