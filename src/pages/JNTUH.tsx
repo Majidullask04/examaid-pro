@@ -82,6 +82,25 @@ const getSessionId = (): string => {
   return sessionId;
 };
 
+// Helper to extract subject name from analysis result
+const extractSubjectFromResult = (text: string): string | null => {
+  // Look for patterns like "Subject: X" or "SUBJECT NAME: X" in the analysis
+  const patterns = [
+    /Subject[:\s]+([A-Za-z\s&]+?)(?:\n|,|\.|$)/i,
+    /SUBJECT NAME[:\s]+([A-Za-z\s&]+?)(?:\n|,|\.|$)/i,
+    /analyzing[:\s]+([A-Za-z\s&]+?)(?:\n|,|\.|syllabus)/i,
+    /for[:\s]+([A-Za-z\s&]+?)(?:\n|,|\.|syllabus)/i,
+  ];
+  
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+    if (match && match[1] && match[1].trim().length > 3) {
+      return match[1].trim();
+    }
+  }
+  return null;
+};
+
 export default function JNTUH() {
   const { user } = useAuth();
   const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
@@ -95,6 +114,7 @@ export default function JNTUH() {
   const [isSyllabusMode, setIsSyllabusMode] = useState(true);
   const [syllabusProcessing, setSyllabusProcessing] = useState(false);
   const [syllabusStage, setSyllabusStage] = useState('');
+  const [extractedSubject, setExtractedSubject] = useState<string>('');
 
   const saveToHistory = async (department: string, subject: string, analysisResult: string) => {
     try {
@@ -231,9 +251,14 @@ export default function JNTUH() {
         }
       }
 
-      // Save to history after completion
+      // Save to history after completion and extract subject name
       if (fullText.trim()) {
         await saveToHistory(selectedDepartment.name, `Syllabus Analysis (${studyGoal})`, fullText);
+        // Extract subject from result for Learning Resources
+        const subject = extractSubjectFromResult(fullText);
+        if (subject) {
+          setExtractedSubject(subject);
+        }
       }
 
       setSyllabusStage('');
@@ -640,7 +665,7 @@ export default function JNTUH() {
       <LearningResources
         open={showResources}
         onOpenChange={setShowResources}
-        topic={query.trim() || (selectedDepartment ? `${selectedDepartment.fullName} key topics` : 'study topics')}
+        topic={query.trim() || extractedSubject || (selectedDepartment ? `${selectedDepartment.fullName} exam preparation` : 'study topics')}
         context={selectedDepartment?.fullName}
       />
     </div>
