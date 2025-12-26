@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
@@ -115,6 +115,7 @@ export default function JNTUH() {
   const [syllabusProcessing, setSyllabusProcessing] = useState(false);
   const [syllabusStage, setSyllabusStage] = useState('');
   const [extractedSubject, setExtractedSubject] = useState<string>('');
+  const resultRef = useRef<HTMLDivElement>(null);
 
   const saveToHistory = async (department: string, subject: string, analysisResult: string) => {
     try {
@@ -259,10 +260,14 @@ export default function JNTUH() {
         if (subject) {
           setExtractedSubject(subject);
         }
+        // Scroll to results
+        setTimeout(() => {
+          resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
       }
 
       setSyllabusStage('');
-      toast.success('Syllabus analysis complete!');
+      toast.success('Analysis complete!');
     } catch (error) {
       console.error('Error:', error);
       toast.error('Failed to analyze syllabus. Please try again.');
@@ -608,7 +613,7 @@ export default function JNTUH() {
 
             {/* Results */}
             {result && (
-              <Card>
+              <Card ref={resultRef}>
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div>
