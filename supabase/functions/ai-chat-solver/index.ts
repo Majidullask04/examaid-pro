@@ -102,6 +102,13 @@ serve(async (req) => {
         );
       }
       
+      if (response.status === 402) {
+        return new Response(
+          JSON.stringify({ error: 'DeepSeek credits exhausted. Please add credits to your DeepSeek account at platform.deepseek.com' }),
+          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
       throw new Error(`DeepSeek API error: ${response.status}`);
     }
 
