@@ -47,7 +47,7 @@ const EXAM_SYSTEM_PROMPT = `You are an expert JNTUH exam preparation assistant. 
 
 Remember: Students will write these answers directly on their exam papers, so be precise and well-structured.`;
 
-const DEEPSEEK_API_URL = 'https://api.deepseek.com/chat/completions';
+const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -57,10 +57,10 @@ serve(async (req) => {
 
   try {
     const { question, messages = [] } = await req.json();
-    const DEEPSEEK_API_KEY = Deno.env.get('DEEPSEEK_API_KEY');
+    const OPENROUTER_API_KEY = Deno.env.get('OPENROUTER_API_KEY');
     
-    if (!DEEPSEEK_API_KEY) {
-      console.error('DEEPSEEK_API_KEY is not configured');
+    if (!OPENROUTER_API_KEY) {
+      console.error('OPENROUTER_API_KEY is not configured');
       throw new Error('AI service is not configured');
     }
 
@@ -77,15 +77,17 @@ serve(async (req) => {
       { role: 'user', content: question }
     ];
 
-    // Use DeepSeek V3 API with streaming
-    const response = await fetch(DEEPSEEK_API_URL, {
+    // Use OpenRouter API with DeepSeek R1 model and streaming
+    const response = await fetch(OPENROUTER_API_URL, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
+        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
         'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://jntuh-exam-prep.lovable.app',
+        'X-Title': 'JNTUH Exam Prep',
       },
       body: JSON.stringify({
-        model: 'deepseek-chat',
+        model: 'deepseek/deepseek-r1-0528:free',
         messages: conversationMessages,
         stream: true,
       }),
@@ -93,13 +95,12 @@ serve(async (req) => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('DeepSeek API error:', response.status, errorText);
+      console.error('OpenRouter API error:', response.status, errorText);
 
       if (response.status === 401) {
         return new Response(
           JSON.stringify({
-            error:
-              'DeepSeek authentication failed (invalid API key). Please verify your DeepSeek key and billing/credits in your DeepSeek account.',
+            error: 'OpenRouter authentication failed (invalid API key). Please verify your OpenRouter key.',
           }),
           { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
@@ -114,12 +115,12 @@ serve(async (req) => {
       
       if (response.status === 402) {
         return new Response(
-          JSON.stringify({ error: 'DeepSeek credits exhausted. Please add credits to your DeepSeek account at platform.deepseek.com' }),
+          JSON.stringify({ error: 'OpenRouter credits exhausted. Please add credits to your OpenRouter account.' }),
           { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
       
-      throw new Error(`DeepSeek API error: ${response.status}`);
+      throw new Error(`OpenRouter API error: ${response.status}`);
     }
 
     console.log('Streaming response started');
