@@ -20,21 +20,41 @@ import {
   X
 } from 'lucide-react';
 
-// Helper function to open external links safely (works in iframes/webviews)
+// Helper function to force open external links in browser (outside of app/webview)
 const openExternalLink = (url: string) => {
   try {
-    // Try window.open first
-    const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
-    if (newWindow) {
-      return;
-    }
+    // Method 1: Create and programmatically click an anchor element
+    // This is most reliable for webviews and iframes
+    const link = document.createElement('a');
+    link.href = url;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    // Some webviews require the element to be in the DOM
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
     
-    // Fallback: navigate in same window
-    window.location.href = url;
+    // Also try window.open as backup (some browsers block the click)
+    setTimeout(() => {
+      try {
+        // Try with _system target (works in some mobile webviews like Cordova)
+        const win = window.open(url, '_system');
+        if (!win) {
+          window.open(url, '_blank');
+        }
+      } catch {
+        // Silent fail - the anchor click likely worked
+      }
+    }, 100);
+    
   } catch {
-    // Last resort: copy to clipboard
-    navigator.clipboard.writeText(url);
-    toast.info('Link copied to clipboard - open in a new tab');
+    // Last resort: copy to clipboard and show toast
+    navigator.clipboard.writeText(url).then(() => {
+      toast.info('Link copied! Paste in your browser to open.');
+    }).catch(() => {
+      toast.error('Could not open link. URL: ' + url);
+    });
   }
 };
 
