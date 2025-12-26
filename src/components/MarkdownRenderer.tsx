@@ -1,3 +1,4 @@
+import { forwardRef } from 'react';
 import { cn } from '@/lib/utils';
 
 interface MarkdownRendererProps {
@@ -5,7 +6,8 @@ interface MarkdownRendererProps {
   className?: string;
 }
 
-export function MarkdownRenderer({ content, className }: MarkdownRendererProps) {
+export const MarkdownRenderer = forwardRef<HTMLDivElement, MarkdownRendererProps>(
+  function MarkdownRenderer({ content, className }, ref) {
   // Parse and render markdown content
   const renderMarkdown = (text: string) => {
     const lines = text.split('\n');
@@ -261,9 +263,10 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
     return elements;
   };
 
-  return (
-    <div className={cn("prose prose-sm dark:prose-invert max-w-none", className)}>
-      {renderMarkdown(content)}
-    </div>
-  );
-}
+    return (
+      <div ref={ref} className={cn("prose prose-sm dark:prose-invert max-w-none", className)}>
+        {renderMarkdown(content)}
+      </div>
+    );
+  }
+);

@@ -5,9 +5,10 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-session-id',
 };
 
-// Clean extracted text - remove extra special characters
+// Clean extracted text - remove extra special characters and think tags
 function cleanText(text: string): string {
   return text
+    .replace(/<think>[\s\S]*?<\/think>/gi, '') // Remove DeepSeek think tags
     .replace(/[*#@~`|\\^]+/g, '')
     .replace(/\s{3,}/g, '\n\n')
     .replace(/[^\S\n]+/g, ' ')
@@ -301,12 +302,17 @@ Use actual questions from web search. Confidence % = (years appeared / 5) * 100.
 
               try {
                 const parsed = JSON.parse(data);
-                const content = parsed.choices?.[0]?.delta?.content;
+                let content = parsed.choices?.[0]?.delta?.content;
                 if (content) {
-                  controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
-                    stage: 'analysis', 
-                    content 
-                  })}\n\n`));
+                  // Clean any think tags from streaming content
+                  content = content.replace(/<think>[\s\S]*?<\/think>/gi, '');
+                  content = content.replace(/<\/?think>/gi, '');
+                  if (content.trim()) {
+                    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
+                      stage: 'analysis', 
+                      content 
+                    })}\n\n`));
+                  }
                 }
               } catch {
                 // Skip invalid JSON
