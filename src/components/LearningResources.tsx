@@ -20,6 +20,24 @@ import {
   X
 } from 'lucide-react';
 
+// Helper function to open external links safely (works in iframes/webviews)
+const openExternalLink = (url: string) => {
+  try {
+    // Try window.open first
+    const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
+    if (newWindow) {
+      return;
+    }
+    
+    // Fallback: navigate in same window
+    window.location.href = url;
+  } catch {
+    // Last resort: copy to clipboard
+    navigator.clipboard.writeText(url);
+    toast.info('Link copied to clipboard - open in a new tab');
+  }
+};
+
 interface ResourceItem {
   title: string;
   url: string;
@@ -157,14 +175,12 @@ export function LearningResources({ open, onOpenChange, topic, context }: Learni
                           <CardContent className="p-3">
                             <div className="flex items-start justify-between gap-2">
                               <div className="flex-1 min-w-0">
-                                <a 
-                                  href={video.url} 
-                                  target="_blank" 
-                                  rel="noopener noreferrer"
-                                  className="font-medium text-sm hover:text-primary transition-colors line-clamp-2"
+                                <button 
+                                  onClick={() => openExternalLink(video.url)}
+                                  className="font-medium text-sm hover:text-primary transition-colors line-clamp-2 text-left"
                                 >
                                   {video.title}
-                                </a>
+                                </button>
                                 <div className="flex items-center gap-2 mt-1">
                                   {getSourceIcon(video.source)}
                                   <Badge variant="outline" className={`text-xs ${getSourceBadgeClass(video.source)}`}>
@@ -181,11 +197,9 @@ export function LearningResources({ open, onOpenChange, topic, context }: Learni
                                 variant="ghost"
                                 size="icon"
                                 className="shrink-0"
-                                asChild
+                                onClick={() => openExternalLink(video.url)}
                               >
-                                <a href={video.url} target="_blank" rel="noopener noreferrer">
-                                  <ExternalLink className="h-4 w-4" />
-                                </a>
+                                <ExternalLink className="h-4 w-4" />
                               </Button>
                             </div>
                           </CardContent>
@@ -216,14 +230,12 @@ export function LearningResources({ open, onOpenChange, topic, context }: Learni
                           <CardContent className="p-3">
                             <div className="flex items-start justify-between gap-2">
                               <div className="flex-1 min-w-0">
-                                <a 
-                                  href={article.url} 
-                                  target="_blank" 
-                                  rel="noopener noreferrer"
-                                  className="font-medium text-sm hover:text-primary transition-colors line-clamp-2"
+                                <button 
+                                  onClick={() => openExternalLink(article.url)}
+                                  className="font-medium text-sm hover:text-primary transition-colors line-clamp-2 text-left"
                                 >
                                   {article.title}
-                                </a>
+                                </button>
                                 <div className="flex items-center gap-2 mt-1">
                                   {getSourceIcon(article.source)}
                                   <Badge variant="outline" className={`text-xs ${getSourceBadgeClass(article.source)}`}>
@@ -240,11 +252,9 @@ export function LearningResources({ open, onOpenChange, topic, context }: Learni
                                 variant="ghost"
                                 size="icon"
                                 className="shrink-0"
-                                asChild
+                                onClick={() => openExternalLink(article.url)}
                               >
-                                <a href={article.url} target="_blank" rel="noopener noreferrer">
-                                  <ExternalLink className="h-4 w-4" />
-                                </a>
+                                <ExternalLink className="h-4 w-4" />
                               </Button>
                             </div>
                           </CardContent>
