@@ -1,4 +1,3 @@
-import { forwardRef } from 'react';
 import { cn } from '@/lib/utils';
 
 interface MarkdownRendererProps {
@@ -6,8 +5,7 @@ interface MarkdownRendererProps {
   className?: string;
 }
 
-export const MarkdownRenderer = forwardRef<HTMLDivElement, MarkdownRendererProps>(
-  function MarkdownRenderer({ content, className }, ref) {
+export function MarkdownRenderer({ content, className }: MarkdownRendererProps) {
   // Parse and render markdown content
   const renderMarkdown = (text: string) => {
     const lines = text.split('\n');
@@ -121,7 +119,7 @@ export const MarkdownRenderer = forwardRef<HTMLDivElement, MarkdownRendererProps
       }
     };
 
-    lines.forEach((line, index) => {
+    lines.forEach((line) => {
       // Code block handling
       if (line.trim().startsWith('```')) {
         if (inCodeBlock) {
@@ -263,10 +261,9 @@ export const MarkdownRenderer = forwardRef<HTMLDivElement, MarkdownRendererProps
     return elements;
   };
 
-    return (
-      <div ref={ref} className={cn("prose prose-sm dark:prose-invert max-w-none", className)}>
-        {renderMarkdown(content)}
-      </div>
-    );
-  }
-);
+  return (
+    <div className={cn("prose prose-sm dark:prose-invert max-w-none", className)}>
+      {renderMarkdown(content)}
+    </div>
+  );
+}
