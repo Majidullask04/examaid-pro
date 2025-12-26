@@ -162,77 +162,126 @@ Include actual questions with year data.`
     // STAGE 3: DeepSeek R1 - Pattern Analysis & Confidence Levels
     console.log('Stage 3: Generating study plan with DeepSeek R1 reasoning...');
 
-    const analysisPrompt = `You are a JNTUH exam pattern analyst. Analyze the syllabus and web search data to create a data-driven study guide.
+    const analysisPrompt = `You are a JNTUH exam pattern analyst. Create a comprehensive exam guide using the syllabus and previous paper data.
 
 ${goalInstructions}
 
-EXTRACTED SYLLABUS:
+EXTRACTED SYLLABUS (Internal Use Only - DO NOT display this to user):
 ${extractedSyllabus}
 
-WEB SEARCH RESULTS (Previous Papers Data):
+WEB SEARCH RESULTS (Previous Papers 2019-2024):
 ${webSearchResults}
 
 ${citations.length > 0 ? `SOURCES: ${citations.slice(0, 5).join(', ')}` : ''}
 
-Create this EXACT structure:
-
-## QUESTION PATTERN ANALYSIS METHODOLOGY
-
-Data Collection:
-- Papers analyzed: 2019-2024
-- Total questions reviewed: [estimate from web data]
-- Sources: [list citations]
-
-Analysis Process:
-1. Extracted topics from syllabus
-2. Matched with JNTUH question bank (2019-2024)
-3. Calculated frequency and probability
+IMPORTANT: Generate output in this EXACT structure. Use ★ for years appeared, calculate confidence as (hits/6)*100%:
 
 ---
 
-## YEAR-WISE HIT RATIO ANALYSIS
+## 🔬 METHODOLOGY: QUESTION PATTERN ANALYSIS
 
-| Topic | 2024 | 2023 | 2022 | 2021 | 2020 | Hits | Confidence |
-|-------|------|------|------|------|------|------|------------|
-| [Topic] | Y/N | Y/N | Y/N | Y/N | Y/N | X/5 | XX% |
+### Data Collection:
+- **Papers Analyzed:** JNTUH 2019, 2020, 2021, 2022, 2023, 2024 (6 years)
+- **Regulations:** R22, R18
+- **Total Questions Reviewed:** [Estimate from web search data]
+- **Sources:** ${citations.length > 0 ? citations.slice(0, 3).join(', ') : '[JNTUH official papers]'}
 
-(Include 10-15 most important topics)
-
----
-
-## HIGH PROBABILITY QUESTIONS PER UNIT
-
-### UNIT 1: [Title]
-| # | Question | Confidence | Years |
-|---|----------|------------|-------|
-| 1 | [Question from papers] | 90% | 2024, 2023, 2022 |
-| 2 | [Question] | 75% | 2023, 2022 |
-| 3 | [Question] | 60% | 2024 |
-
-(Repeat for ALL units - minimum 3 questions per unit with confidence %)
+### Analysis Process:
+1. Extracted subject topics from syllabus image using AI vision
+2. Searched JNTUH previous year question papers (2019-2024)
+3. Mapped each question to topics and calculated frequency
+4. Confidence Level = (Years Appeared / 6) × 100%
 
 ---
 
-## SUGGESTED APPROACH TO TACKLE THIS SUBJECT
+## 📊 YEAR-WISE HIT RATIO WITH CONFIDENCE
 
-### Phase 1: Foundation (Days 1-3)
-- Start with [90%+ confidence topics]
-- Focus: [specific topics]
+| Topic | '24 | '23 | '22 | '21 | '20 | '19 | Hit Ratio | Confidence |
+|-------|-----|-----|-----|-----|-----|-----|-----------|------------|
+| [Topic 1] | ★ | ★ | ★ | - | ★ | ★ | 5/6 | 83% 🔥 |
+| [Topic 2] | ★ | ★ | - | ★ | - | ★ | 4/6 | 67% ⭐⭐⭐ |
+| [Topic 3] | ★ | ★ | ★ | ★ | ★ | ★ | 6/6 | 100% 🔥🔥 |
+| [Topic 4] | - | ★ | ★ | - | - | - | 2/6 | 33% ⭐⭐ |
 
-### Phase 2: Core (Days 4-7)
-- Cover [60-80% confidence topics]
-- Practice: [specific types]
+**Legend:**
+- ★ = Question appeared that year | - = Not appeared
+- 🔥🔥 = GUARANTEED (100%) | 🔥 = Very High (75-99%) | ⭐⭐⭐ = High (50-74%) | ⭐⭐ = Medium (25-49%) | ⭐ = Low (<25%)
 
-### Phase 3: Revision (Days 8-10)
-- Quick review of high-frequency topics
-- Mock tests strategy
+(Include 15-20 most important topics from syllabus with actual hit data)
 
-### Exam Strategy:
-- Part A: [tips based on patterns]
-- Part B: [tips based on patterns]
-- Time: [allocation]
+---
 
-Use actual questions from web search. Confidence % = (years appeared / 5) * 100.`;
+## 🎯 HIGH PROBABILITY QUESTIONS PER UNIT
+
+### UNIT 1: [Title from syllabus]
+
+| # | Question | Years Appeared | Hits | Confidence |
+|---|----------|----------------|------|------------|
+| 1 | [Actual question from papers] | 2024 ★, 2023 ★, 2022 ★, 2021 ★, 2019 ★ | 5/6 | 83% 🔥 |
+| 2 | [Question text] | 2024 ★, 2023 ★, 2022 ★ | 3/6 | 50% ⭐⭐⭐ |
+| 3 | [Question text] | 2023 ★, 2021 ★ | 2/6 | 33% ⭐⭐ |
+
+### UNIT 2: [Title]
+(Same format - 4-5 questions per unit with confidence levels)
+
+### UNIT 3: [Title]
+(Continue for ALL units in the syllabus)
+
+### UNIT 4: [Title]
+(Continue...)
+
+### UNIT 5: [Title]
+(Continue...)
+
+---
+
+## 💡 SUGGESTED APPROACH TO TACKLE THIS SUBJECT
+
+### 📚 Phase 1: High Priority Topics (Days 1-4) - 75%+ Confidence
+**Focus on 🔥 and 🔥🔥 rated topics first:**
+- [List specific topics with 75%+ confidence]
+- Time allocation: 40% of total study time
+- Strategy: [Specific study tips for these topics]
+
+### 📖 Phase 2: Core Topics (Days 5-8) - 50-74% Confidence  
+**Cover ⭐⭐⭐ rated topics:**
+- [List specific topics]
+- Time allocation: 35% of total study time
+- Practice: [Specific practice methods]
+
+### 📝 Phase 3: Supporting Topics (Days 9-10) - 25-49% Confidence
+**Brief review of ⭐⭐ rated topics:**
+- [List topics]
+- Time allocation: 15% of total study time
+- Focus on: Key definitions and diagrams only
+
+### 🎯 Phase 4: Final Revision (Days 11-12)
+- Revise all 🔥 topics thoroughly
+- Quick formula/diagram review
+- Practice previous year papers
+
+### 📋 Exam Day Strategy:
+**Part A (Short Answers - 2 marks each):**
+- [Tips based on pattern analysis]
+- Common question types: [List]
+
+**Part B (Long Answers - 10-14 marks each):**
+- [Tips based on pattern analysis]
+- Focus areas: [List high-probability topics]
+
+**Time Management:**
+- Part A: [Time allocation]
+- Part B: [Time allocation]
+- Review: [Time allocation]
+
+### ⚡ Quick Tips:
+1. [Specific tip based on subject pattern]
+2. [Another tip]
+3. [Another tip]
+
+---
+
+*Analysis based on JNTUH papers (2019-2024). Confidence levels are calculated from historical patterns and may vary.*`;
 
     const analysisResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
@@ -261,16 +310,10 @@ Use actual questions from web search. Confidence % = (years appeared / 5) * 100.
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
-        // Stage 1: Cleaned syllabus
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
-          stage: 'syllabus_extracted', 
-          content: extractedSyllabus 
-        })}\n\n`));
-
-        // Stage 2: Web search with year data
+        // Skip syllabus_extracted stage - only send web_search_complete
         controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
           stage: 'web_search_complete', 
-          content: webSearchResults,
+          content: `Found ${citations.length} sources for previous papers`,
           citations: citations
         })}\n\n`));
 

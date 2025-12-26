@@ -156,7 +156,7 @@ export default function JNTUH() {
 
     setSyllabusProcessing(true);
     setResult('');
-    setSyllabusStage('Stage 1: Extracting syllabus with Gemini Vision...');
+    setSyllabusStage('Stage 1: Analyzing syllabus image...');
 
     try {
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analyze-syllabus`, {
@@ -187,7 +187,6 @@ export default function JNTUH() {
       const decoder = new TextDecoder();
       let fullText = '';
       let buffer = '';
-      let syllabusExtracted = false;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -205,19 +204,24 @@ export default function JNTUH() {
             try {
               const parsed = JSON.parse(data);
               
-              if (parsed.stage === 'syllabus_extracted') {
+              if (parsed.stage === 'web_search_complete') {
                 setSyllabusStage('Stage 2: Searching JNTUH papers (2019-2024)...');
-                syllabusExtracted = true;
-              } else if (parsed.stage === 'web_search_complete') {
-                setSyllabusStage('Stage 3: DeepSeek R1 reasoning (30-60s)...');
               } else if (parsed.stage === 'analysis' && parsed.content) {
                 fullText += parsed.content;
                 setResult(fullText);
                 
-                if (fullText.includes('HIT RATIO') || fullText.includes('YEAR-WISE')) {
-                  setSyllabusStage('Stage 4: Building hit ratio tables...');
-                } else if (fullText.includes('SUGGESTED APPROACH') || fullText.includes('Phase 1')) {
-                  setSyllabusStage('Stage 5: Generating study strategy...');
+                // Update stages based on content being generated
+                if (fullText.includes('METHODOLOGY')) {
+                  setSyllabusStage('Stage 3: Building methodology & hit ratios...');
+                }
+                if (fullText.includes('YEAR-WISE HIT RATIO') || fullText.includes('Hit Ratio')) {
+                  setSyllabusStage('Stage 4: Generating high probability questions...');
+                }
+                if (fullText.includes('HIGH PROBABILITY QUESTIONS')) {
+                  setSyllabusStage('Stage 4: Generating high probability questions...');
+                }
+                if (fullText.includes('SUGGESTED APPROACH') || fullText.includes('Phase 1:')) {
+                  setSyllabusStage('Stage 5: Creating study approach...');
                 }
               }
             } catch {
