@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from 'react';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { MarkdownRenderer } from '@/components/MarkdownRenderer';
@@ -10,6 +9,12 @@ import { AnalysisHistory } from '@/components/AnalysisHistory';
 import { LearningResources } from '@/components/LearningResources';
 import { SyllabusUploader } from '@/components/SyllabusUploader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { NeumorphicCard } from '@/components/neumorphic/NeumorphicCard';
+import { StudyGoalToggle } from '@/components/neumorphic/StudyGoalToggle';
+import { ThinkingAnimation } from '@/components/neumorphic/ThinkingAnimation';
+import { WhatsAppShare } from '@/components/neumorphic/WhatsAppShare';
+import { PanicModeButton } from '@/components/neumorphic/PanicModeButton';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
@@ -24,7 +29,6 @@ import {
   Database, 
   Bot,
   ArrowLeft,
-  Loader2,
   Sparkles,
   GraduationCap,
   BookOpen,
@@ -33,9 +37,9 @@ import {
   Video,
   ImageIcon,
   FileText,
-  ClipboardList
+  ClipboardList,
+  History
 } from 'lucide-react';
-import { Separator } from '@/components/ui/separator';
 
 interface Department {
   id: string;
@@ -43,19 +47,18 @@ interface Department {
   fullName: string;
   icon: React.ComponentType<{ className?: string }>;
   description: string;
-  color: string;
 }
 
 const departments: Department[] = [
-  { id: 'cse', name: 'CSE', fullName: 'Computer Science & Engineering', icon: Cpu, description: 'Core CS fundamentals, programming, algorithms', color: 'bg-blue-500/10 text-blue-500 border-blue-500/20' },
-  { id: 'ece', name: 'ECE', fullName: 'Electronics & Communication', icon: Radio, description: 'Electronics, signals, communication systems', color: 'bg-green-500/10 text-green-500 border-green-500/20' },
-  { id: 'eee', name: 'EEE', fullName: 'Electrical & Electronics', icon: Zap, description: 'Power systems, electrical machines, controls', color: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' },
-  { id: 'mech', name: 'MECH', fullName: 'Mechanical Engineering', icon: Cog, description: 'Thermodynamics, mechanics, manufacturing', color: 'bg-orange-500/10 text-orange-500 border-orange-500/20' },
-  { id: 'civil', name: 'CIVIL', fullName: 'Civil Engineering', icon: Building2, description: 'Structures, construction, surveying', color: 'bg-stone-500/10 text-stone-500 border-stone-500/20' },
-  { id: 'it', name: 'IT', fullName: 'Information Technology', icon: MonitorSmartphone, description: 'Software development, networks, databases', color: 'bg-purple-500/10 text-purple-500 border-purple-500/20' },
-  { id: 'csm', name: 'CSM', fullName: 'CS & Machine Learning', icon: BrainCircuit, description: 'AI, machine learning, deep learning', color: 'bg-pink-500/10 text-pink-500 border-pink-500/20' },
-  { id: 'csd', name: 'CSD', fullName: 'CS & Data Science', icon: Database, description: 'Big data, analytics, data engineering', color: 'bg-cyan-500/10 text-cyan-500 border-cyan-500/20' },
-  { id: 'aids', name: 'AIDS', fullName: 'AI & Data Science', icon: Bot, description: 'Artificial intelligence, data science', color: 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20' },
+  { id: 'cse', name: 'CSE', fullName: 'Computer Science & Engineering', icon: Cpu, description: 'Core CS fundamentals, programming, algorithms' },
+  { id: 'ece', name: 'ECE', fullName: 'Electronics & Communication', icon: Radio, description: 'Electronics, signals, communication systems' },
+  { id: 'eee', name: 'EEE', fullName: 'Electrical & Electronics', icon: Zap, description: 'Power systems, electrical machines, controls' },
+  { id: 'mech', name: 'MECH', fullName: 'Mechanical Engineering', icon: Cog, description: 'Thermodynamics, mechanics, manufacturing' },
+  { id: 'civil', name: 'CIVIL', fullName: 'Civil Engineering', icon: Building2, description: 'Structures, construction, surveying' },
+  { id: 'it', name: 'IT', fullName: 'Information Technology', icon: MonitorSmartphone, description: 'Software development, networks, databases' },
+  { id: 'csm', name: 'CSM', fullName: 'CS & Machine Learning', icon: BrainCircuit, description: 'AI, machine learning, deep learning' },
+  { id: 'csd', name: 'CSD', fullName: 'CS & Data Science', icon: Database, description: 'Big data, analytics, data engineering' },
+  { id: 'aids', name: 'AIDS', fullName: 'AI & Data Science', icon: Bot, description: 'Artificial intelligence, data science' },
 ];
 
 const quickSubjectsMap: Record<string, string[]> = {
@@ -84,9 +87,17 @@ const getSessionId = (): string => {
   return sessionId;
 };
 
+// Get saved department from localStorage
+const getSavedDepartment = (): Department | null => {
+  const savedId = localStorage.getItem('jntuh_selected_dept');
+  if (savedId) {
+    return departments.find(d => d.id === savedId) || null;
+  }
+  return null;
+};
+
 // Helper to extract subject name from analysis result
 const extractSubjectFromResult = (text: string): string | null => {
-  // Look for patterns like "Subject: X" or "SUBJECT NAME: X" in the analysis
   const patterns = [
     /Subject[:\s]+([A-Za-z\s&]+?)(?:\n|,|\.|$)/i,
     /SUBJECT NAME[:\s]+([A-Za-z\s&]+?)(?:\n|,|\.|$)/i,
@@ -103,9 +114,23 @@ const extractSubjectFromResult = (text: string): string | null => {
   return null;
 };
 
+// Extract strategy summary from result
+const extractStrategySummary = (text: string): string => {
+  // Look for key insights in the result
+  const lines = text.split('\n').filter(l => l.trim());
+  for (const line of lines) {
+    if (line.includes('Focus on') || line.includes('Priority') || line.includes('Strategy')) {
+      return line.replace(/[#*]/g, '').trim().slice(0, 150);
+    }
+  }
+  return "Focus on high-probability topics to maximize your exam score!";
+};
+
 export default function JNTUH() {
   const { user } = useAuth();
-  const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
+  const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(getSavedDepartment);
+  const [selectedSubject, setSelectedSubject] = useState<string>('');
+  const [studyGoal, setStudyGoal] = useState<'pass' | 'high_marks'>('pass');
   const [query, setQuery] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [result, setResult] = useState('');
@@ -118,7 +143,15 @@ export default function JNTUH() {
   const [syllabusStage, setSyllabusStage] = useState('');
   const [extractedSubject, setExtractedSubject] = useState<string>('');
   const [activeTab, setActiveTab] = useState<string>('input');
+  const [panicMode, setPanicMode] = useState(false);
   const resultRef = useRef<HTMLDivElement>(null);
+
+  // Save department selection
+  useEffect(() => {
+    if (selectedDepartment) {
+      localStorage.setItem('jntuh_selected_dept', selectedDepartment.id);
+    }
+  }, [selectedDepartment]);
 
   const saveToHistory = async (department: string, subject: string, analysisResult: string) => {
     try {
@@ -134,7 +167,6 @@ export default function JNTUH() {
 
       if (error) {
         console.error('Error saving to history:', error);
-        // Fallback to localStorage
         const localHistory = JSON.parse(localStorage.getItem('jntuh_history') || '[]');
         localHistory.unshift({
           id: Date.now().toString(),
@@ -157,6 +189,7 @@ export default function JNTUH() {
     }
     setQuery(item.subject);
     setResult(item.result);
+    setActiveTab('results');
     toast.success('Previous analysis loaded');
   };
 
@@ -172,7 +205,7 @@ export default function JNTUH() {
   };
 
   // Handle syllabus image analysis
-  const handleSyllabusAnalysis = async (imageBase64: string, studyGoal: 'pass' | 'high_marks') => {
+  const handleSyllabusAnalysis = async (imageBase64: string, goal: 'pass' | 'high_marks') => {
     if (!selectedDepartment) {
       toast.error('Please select a department first');
       return;
@@ -194,7 +227,8 @@ export default function JNTUH() {
         body: JSON.stringify({
           imageBase64,
           department: selectedDepartment.fullName,
-          studyGoal,
+          studyGoal: goal,
+          panicMode,
         }),
       });
 
@@ -234,7 +268,6 @@ export default function JNTUH() {
                 fullText += parsed.content;
                 setResult(fullText);
                 
-                // Update stages based on content being generated
                 if (fullText.includes('METHODOLOGY')) {
                   setSyllabusStage('Stage 3: Building methodology & hit ratios...');
                 }
@@ -255,25 +288,22 @@ export default function JNTUH() {
         }
       }
 
-      // Save to history after completion and extract subject name
       if (fullText.trim()) {
-        await saveToHistory(selectedDepartment.name, `Syllabus Analysis (${studyGoal})`, fullText);
-        // Extract subject from result for Learning Resources
+        await saveToHistory(selectedDepartment.name, `Syllabus Analysis (${goal})`, fullText);
         const subject = extractSubjectFromResult(fullText);
         if (subject) {
           setExtractedSubject(subject);
         }
-        // Auto-switch to Results tab
         setActiveTab('results');
-        toast.success('Analysis complete! Check the Results tab.');
+        toast.success('Analysis complete!');
       } else {
-        toast.error('No analysis results received. Please try again.');
+        toast.error('🛏️ Our AI is taking a nap. Try again in 10 seconds.');
       }
 
       setSyllabusStage('');
     } catch (error) {
       console.error('Error:', error);
-      toast.error('Failed to analyze syllabus. Please try again.');
+      toast.error('🛏️ Our AI is taking a nap. Try again in 10 seconds.');
     } finally {
       setSyllabusProcessing(false);
       setSyllabusStage('');
@@ -281,8 +311,14 @@ export default function JNTUH() {
   };
 
   const handleSearch = async () => {
-    if (!query.trim() || !selectedDepartment) {
-      toast.error('Please enter a query');
+    if (!selectedDepartment) {
+      toast.error('Please select a department');
+      return;
+    }
+
+    const searchQuery = selectedSubject || query.trim();
+    if (!searchQuery) {
+      toast.error('Please enter a subject or topic');
       return;
     }
 
@@ -291,7 +327,15 @@ export default function JNTUH() {
     setProcessingStage('Stage 1: Researching syllabus & patterns...');
 
     try {
-      const enhancedQuery = `JNTUH R22 ${selectedDepartment.fullName} - High probability exam analysis for all units: ${query}. Focus on most frequently asked questions and important topics across all units.`;
+      const panicModePrompt = panicMode 
+        ? 'IMPORTANT: This is LAST MINUTE PREP mode. Only give me the TOP 10 most critical questions across ALL units. No fluff, just the essentials.' 
+        : '';
+      
+      const goalPrompt = studyGoal === 'pass' 
+        ? 'Focus on easy-to-learn topics that appear frequently. Goal: Just pass the exam with minimum effort.'
+        : 'Include all important topics for maximum marks. Goal: Score high marks.';
+
+      const enhancedQuery = `JNTUH R22 ${selectedDepartment.fullName} - ${searchQuery}. ${goalPrompt} ${panicModePrompt}. Provide high probability questions with confidence levels for all units.`;
 
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-explain`, {
         method: 'POST',
@@ -360,112 +404,125 @@ export default function JNTUH() {
         }
       }
 
-      // Save to history after completion
       if (fullText.trim()) {
-        await saveToHistory(selectedDepartment.name, query, fullText);
-        // Auto-switch to Results tab
+        await saveToHistory(selectedDepartment.name, searchQuery, fullText);
         setActiveTab('results');
-        toast.success('Analysis complete! Check the Results tab.');
+        toast.success('Analysis complete!');
       } else {
-        toast.error('No analysis results received. Please try again.');
+        toast.error('🛏️ Our AI is taking a nap. Try again in 10 seconds.');
       }
 
       setProcessingStage('');
     } catch (error) {
       console.error('Error:', error);
-      toast.error('Failed to process query. Please try again.');
+      toast.error('🛏️ Our AI is taking a nap. Try again in 10 seconds.');
     } finally {
       setIsProcessing(false);
       setProcessingStage('');
     }
   };
 
+  const handleAnalyzeNow = () => {
+    if (isSyllabusMode) {
+      // This will be handled by the SyllabusUploader component
+      toast.info('Please upload a syllabus image first');
+    } else {
+      handleSearch();
+    }
+  };
+
+  const isLoading = isProcessing || syllabusProcessing;
+  const currentStage = syllabusStage || processingStage;
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
       
-      <main className="flex-1 container py-8">
-        {/* Header Section */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
-            <GraduationCap className="h-4 w-4" />
-            JNTUH R22 Regulation
-          </div>
-          <h1 className="text-3xl md:text-4xl font-bold mb-2">
-            JNTUH Exam Preparation
+      <main className="flex-1 container py-6 px-4 max-w-2xl mx-auto">
+        {/* Compact Header */}
+        <div className="text-center mb-6">
+          <h1 className="text-2xl md:text-3xl font-bold mb-1">
+            Pass Your JNTUH Exams.
           </h1>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
-            AI-powered analysis for high-probability questions across all units. 
-            Select your department and get comprehensive exam insights.
+          <p className="text-muted-foreground text-sm">
+            AI-powered exam preparation
           </p>
         </div>
 
         {!selectedDepartment ? (
-          // Department Selection Grid
+          // Department Selection - Neumorphic Grid
           <div className="space-y-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold">Select Your B.Tech Department</h2>
-              <AnalysisHistory sessionId={sessionId} onLoadHistory={handleLoadHistory} />
+              <h2 className="text-lg font-semibold">Select Your Branch</h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  // Show history dialog
+                }}
+                className="gap-2"
+              >
+                <History className="h-4 w-4" />
+                History
+              </Button>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               {departments.map((dept) => (
-                <Card 
+                <NeumorphicCard 
                   key={dept.id}
-                  className="cursor-pointer transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-2 hover:border-primary/50"
+                  interactive
+                  className="text-center cursor-pointer"
                   onClick={() => setSelectedDepartment(dept)}
                 >
-                  <CardHeader className="pb-2">
-                    <div className="flex items-center gap-3">
-                      <div className={`p-3 rounded-xl ${dept.color}`}>
-                        <dept.icon className="h-6 w-6" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-lg">{dept.name}</CardTitle>
-                        <CardDescription className="text-xs">{dept.fullName}</CardDescription>
-                      </div>
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="p-4 rounded-full bg-primary/10">
+                      <dept.icon className="h-8 w-8 text-primary" />
                     </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground">{dept.description}</p>
-                  </CardContent>
-                </Card>
+                    <div>
+                      <p className="font-semibold text-lg">{dept.name}</p>
+                      <p className="text-xs text-muted-foreground line-clamp-1">{dept.fullName}</p>
+                    </div>
+                  </div>
+                </NeumorphicCard>
               ))}
             </div>
           </div>
         ) : (
-          // Search Interface
-          <div className="max-w-4xl mx-auto space-y-6">
-            {/* Back Button and Department Info */}
+          // Main Analysis Interface
+          <div className="space-y-6">
+            {/* Back Button and Department Badge */}
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={() => {
-                    setSelectedDepartment(null);
-                    setQuery('');
-                    setResult('');
-                  }}
-                >
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back
-                </Button>
-                <Badge variant="secondary" className={`${selectedDepartment.color} border`}>
-                  <selectedDepartment.icon className="h-4 w-4 mr-1" />
-                  {selectedDepartment.name} - R22
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => {
+                  setSelectedDepartment(null);
+                  setQuery('');
+                  setResult('');
+                  setSelectedSubject('');
+                }}
+                className="gap-2 -ml-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Back
+              </Button>
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary" className="gap-1">
+                  <selectedDepartment.icon className="h-3 w-3" />
+                  {selectedDepartment.name}
                 </Badge>
+                <AnalysisHistory sessionId={sessionId} onLoadHistory={handleLoadHistory} />
               </div>
-              <AnalysisHistory sessionId={sessionId} onLoadHistory={handleLoadHistory} />
             </div>
 
-            {/* Tabs for Input/Results */}
+            {/* Tabs */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="input" className="gap-2">
+              <TabsList className="grid w-full grid-cols-2 neumorphic-inset p-1">
+                <TabsTrigger value="input" className="gap-2 data-[state=active]:neumorphic-sm rounded-[16px]">
                   <FileText className="h-4 w-4" />
                   Input
                 </TabsTrigger>
-                <TabsTrigger value="results" className="gap-2 relative">
+                <TabsTrigger value="results" className="gap-2 relative data-[state=active]:neumorphic-sm rounded-[16px]">
                   <ClipboardList className="h-4 w-4" />
                   Results
                   {result && (
@@ -475,230 +532,194 @@ export default function JNTUH() {
               </TabsList>
 
               <TabsContent value="input" className="mt-6 space-y-6">
-                {/* Mode Toggle */}
-                <Card className="bg-muted/30">
-                  <CardContent className="py-4">
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                      <div>
-                        <h3 className="font-semibold text-sm mb-1">Analysis Mode</h3>
-                        <p className="text-xs text-muted-foreground">
-                          Choose how you want to analyze your syllabus
-                        </p>
+                {/* Processing State */}
+                {isLoading ? (
+                  <NeumorphicCard className="py-8">
+                    <ThinkingAnimation stage={currentStage} />
+                  </NeumorphicCard>
+                ) : (
+                  <>
+                    {/* Subject Selection Dropdown */}
+                    <NeumorphicCard className="space-y-4">
+                      <label className="text-sm font-medium text-muted-foreground">
+                        📖 Select Subject
+                      </label>
+                      <Select value={selectedSubject} onValueChange={setSelectedSubject}>
+                        <SelectTrigger className="w-full min-h-[52px] text-base neumorphic-inset border-0">
+                          <SelectValue placeholder="Choose a subject..." />
+                        </SelectTrigger>
+                        <SelectContent className="bg-card border-border">
+                          {getQuickSubjects(selectedDepartment.id).map((subject) => (
+                            <SelectItem key={subject} value={subject} className="py-3">
+                              {subject}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      {/* Or type custom */}
+                      <div className="relative">
+                        <div className="absolute inset-0 flex items-center">
+                          <span className="w-full border-t border-border" />
+                        </div>
+                        <div className="relative flex justify-center text-xs">
+                          <span className="bg-card px-2 text-muted-foreground">or type your own</span>
+                        </div>
                       </div>
+
+                      <Textarea
+                        placeholder="e.g., Operating Systems, DBMS..."
+                        value={query}
+                        onChange={(e) => {
+                          setQuery(e.target.value);
+                          setSelectedSubject('');
+                        }}
+                        className="min-h-[60px] resize-none neumorphic-inset border-0"
+                        disabled={isLoading}
+                      />
+                    </NeumorphicCard>
+
+                    {/* Study Goal Toggle */}
+                    <NeumorphicCard className="space-y-3">
+                      <label className="text-sm font-medium text-muted-foreground">
+                        🎯 Your Goal
+                      </label>
+                      <StudyGoalToggle 
+                        value={studyGoal} 
+                        onChange={setStudyGoal}
+                        disabled={isLoading}
+                      />
+                    </NeumorphicCard>
+
+                    {/* Panic Mode */}
+                    <div className="flex justify-center">
+                      <PanicModeButton
+                        active={panicMode}
+                        onChange={setPanicMode}
+                        disabled={isLoading}
+                      />
+                    </div>
+
+                    {/* Mode Toggle */}
+                    <NeumorphicCard variant="inset" className="p-4">
                       <div className="flex gap-2">
-                        <Button
-                          variant={isSyllabusMode ? 'default' : 'outline'}
-                          size="sm"
+                        <button
                           onClick={() => setIsSyllabusMode(true)}
-                          disabled={isProcessing || syllabusProcessing}
-                          className="gap-2"
+                          disabled={isLoading}
+                          className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-[12px] font-medium text-sm transition-all min-h-[48px] ${
+                            isSyllabusMode 
+                              ? 'bg-card neumorphic-sm text-foreground' 
+                              : 'text-muted-foreground hover:text-foreground'
+                          }`}
                         >
                           <ImageIcon className="h-4 w-4" />
                           Upload Syllabus
-                        </Button>
-                        <Button
-                          variant={!isSyllabusMode ? 'default' : 'outline'}
-                          size="sm"
+                        </button>
+                        <button
                           onClick={() => setIsSyllabusMode(false)}
-                          disabled={isProcessing || syllabusProcessing}
-                          className="gap-2"
+                          disabled={isLoading}
+                          className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-[12px] font-medium text-sm transition-all min-h-[48px] ${
+                            !isSyllabusMode 
+                              ? 'bg-card neumorphic-sm text-foreground' 
+                              : 'text-muted-foreground hover:text-foreground'
+                          }`}
                         >
                           <FileText className="h-4 w-4" />
-                          Type Query
-                        </Button>
+                          Quick Query
+                        </button>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                    </NeumorphicCard>
 
-                {isSyllabusMode ? (
-                  /* Syllabus Upload Mode */
-                  <div className="space-y-6">
-                    <Card className="bg-muted/50 border-dashed">
-                      <CardContent className="py-4">
-                        <div className="flex items-start gap-3">
-                          <div className="p-2 rounded-lg bg-primary/10">
-                            <ImageIcon className="h-5 w-5 text-primary" />
-                          </div>
-                          <div className="space-y-1">
-                            <h3 className="font-medium text-sm">How it works</h3>
-                            <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
-                              <li>Upload or take a photo of your JNTUH syllabus</li>
-                              <li>Choose your goal: "Just Pass" or "High Marks"</li>
-                              <li>AI analyzes and creates a personalized study plan</li>
-                            </ol>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    <SyllabusUploader 
-                      onAnalyze={handleSyllabusAnalysis}
-                      isProcessing={syllabusProcessing}
-                      processingStage={syllabusStage}
-                    />
-                  </div>
-                ) : (
-                  /* Text Query Mode */
-                  <div className="space-y-6">
-                    {/* Usage Guide */}
-                    <Card className="bg-muted/50 border-dashed">
-                      <CardContent className="py-4">
-                        <div className="flex items-start gap-3">
-                          <div className="p-2 rounded-lg bg-primary/10">
-                            <BookOpen className="h-5 w-5 text-primary" />
-                          </div>
-                          <div className="space-y-1">
-                            <h3 className="font-medium text-sm">How to use</h3>
-                            <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
-                              <li>Click a quick subject button below OR type your subject/topic</li>
-                              <li>Click "Analyze with AI" to start the 3-stage analysis</li>
-                              <li>Get hit ratios, confidence levels, and study action plans</li>
-                            </ol>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    {/* Quick Subject Buttons */}
-                    <div className="space-y-3">
-                      <h3 className="text-sm font-medium text-muted-foreground">Quick Select Common Subjects:</h3>
-                      <div className="flex flex-wrap gap-2">
-                        {getQuickSubjects(selectedDepartment.id).map((subject) => (
-                          <Button
-                            key={subject}
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setQuery(subject + ' high probability questions for all units')}
-                            disabled={isProcessing}
-                            className="text-xs"
-                          >
-                            {subject}
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Search Card */}
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <BookOpen className="h-5 w-5 text-primary" />
-                          {selectedDepartment.fullName}
-                        </CardTitle>
-                        <CardDescription>
-                          Enter your subject or topic to analyze high-probability questions across all units
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        <Textarea
-                          placeholder="e.g., 'Operating Systems complete analysis' or 'DBMS important questions for all units' or 'Data Structures high probability topics'"
-                          value={query}
-                          onChange={(e) => setQuery(e.target.value)}
-                          className="min-h-[100px] resize-none"
-                          disabled={isProcessing}
-                        />
-                        <Button 
-                          onClick={handleSearch} 
-                          disabled={isProcessing || !query.trim()}
-                          className="w-full gap-2"
-                          size="lg"
-                        >
-                          {isProcessing ? (
-                            <>
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                              {processingStage || 'Processing...'}
-                            </>
-                          ) : (
-                            <>
-                              <Sparkles className="h-4 w-4" />
-                              Analyze with AI (3-Stage Analysis)
-                            </>
-                          )}
-                        </Button>
-
-                        {/* Processing Stages Indicator */}
-                        {isProcessing && (
-                          <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                            <div className="flex gap-1">
-                              <div className={`h-2 w-2 rounded-full ${processingStage.includes('1') ? 'bg-primary animate-pulse' : 'bg-muted'}`} />
-                              <div className={`h-2 w-2 rounded-full ${processingStage.includes('2') ? 'bg-primary animate-pulse' : 'bg-muted'}`} />
-                              <div className={`h-2 w-2 rounded-full ${processingStage.includes('3') ? 'bg-primary animate-pulse' : 'bg-muted'}`} />
-                              <div className={`h-2 w-2 rounded-full ${processingStage.includes('Final') ? 'bg-primary animate-pulse' : 'bg-muted'}`} />
-                            </div>
-                            <span>{processingStage}</span>
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  </div>
+                    {isSyllabusMode ? (
+                      /* Syllabus Upload */
+                      <SyllabusUploader 
+                        onAnalyze={(imageBase64) => handleSyllabusAnalysis(imageBase64, studyGoal)}
+                        isProcessing={syllabusProcessing}
+                        processingStage={syllabusStage}
+                      />
+                    ) : (
+                      /* Analyze Now Button */
+                      <button
+                        onClick={handleSearch}
+                        disabled={isLoading || (!selectedSubject && !query.trim())}
+                        className="w-full btn-neumorphic-primary text-lg py-5 min-h-[64px] disabled:opacity-50 disabled:cursor-not-allowed glow-primary"
+                      >
+                        <span className="flex items-center justify-center gap-2">
+                          <Sparkles className="h-5 w-5" />
+                          ✨ Analyze Now
+                        </span>
+                      </button>
+                    )}
+                  </>
                 )}
               </TabsContent>
 
               <TabsContent value="results" className="mt-6">
                 {result ? (
-                  <div ref={resultRef}>
-                    <Card>
-                      <CardHeader>
-                        <div className="flex items-center justify-between flex-wrap gap-4">
-                          <div>
-                            <CardTitle className="flex items-center gap-2">
-                              <Sparkles className="h-5 w-5 text-primary" />
-                              AI Analysis Result
-                            </CardTitle>
-                            <CardDescription>
-                              Comprehensive analysis with hit ratios, confidence levels & action plans
-                            </CardDescription>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              onClick={() => setShowResources(true)}
-                              className="gap-2"
-                            >
-                              <Video className="h-4 w-4" />
-                              Find Resources
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={handleCopyResult}
-                              className="gap-2"
-                            >
-                              {copied ? (
-                                <>
-                                  <Check className="h-4 w-4" />
-                                  Copied
-                                </>
-                              ) : (
-                                <>
-                                  <Copy className="h-4 w-4" />
-                                  Copy
-                                </>
-                              )}
-                            </Button>
-                          </div>
+                  <div ref={resultRef} className="space-y-4">
+                    {/* Strategy Summary Card */}
+                    <NeumorphicCard className="bg-primary/5 border-2 border-primary/20">
+                      <div className="flex items-start gap-3">
+                        <div className="p-2 rounded-full bg-primary/10">
+                          <GraduationCap className="h-5 w-5 text-primary" />
                         </div>
-                      </CardHeader>
-                      <CardContent>
-                        <MarkdownRenderer content={result} />
-                      </CardContent>
-                    </Card>
+                        <div>
+                          <p className="font-semibold text-sm text-primary">💡 Strategy</p>
+                          <p className="text-sm mt-1">{extractStrategySummary(result)}</p>
+                        </div>
+                      </div>
+                    </NeumorphicCard>
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-2">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => setShowResources(true)}
+                        className="flex-1 gap-2 min-h-[48px] neumorphic-sm border-0"
+                      >
+                        <Video className="h-4 w-4" />
+                        Find Resources
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleCopyResult}
+                        className="gap-2 min-h-[48px] neumorphic-sm border-0"
+                      >
+                        {copied ? (
+                          <>
+                            <Check className="h-4 w-4" />
+                            Copied
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="h-4 w-4" />
+                            Copy
+                          </>
+                        )}
+                      </Button>
+                    </div>
+
+                    {/* Results Content */}
+                    <NeumorphicCard className="overflow-hidden">
+                      <MarkdownRenderer content={result} />
+                    </NeumorphicCard>
                   </div>
                 ) : (
-                  <Card className="border-dashed">
-                    <CardContent className="py-12 text-center">
-                      <ClipboardList className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-                      <h3 className="font-medium text-muted-foreground mb-2">No Results Yet</h3>
-                      <p className="text-sm text-muted-foreground mb-4">
-                        Upload a syllabus or enter a query to get AI analysis
-                      </p>
-                      <Button variant="outline" onClick={() => setActiveTab('input')}>
-                        Go to Input
-                      </Button>
-                    </CardContent>
-                  </Card>
+                  <NeumorphicCard variant="inset" className="py-12 text-center">
+                    <ClipboardList className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+                    <h3 className="font-medium text-muted-foreground mb-2">No Results Yet</h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Upload a syllabus or enter a query to get AI analysis
+                    </p>
+                    <Button 
+                      onClick={() => setActiveTab('input')}
+                      className="btn-neumorphic-primary"
+                    >
+                      Go to Input
+                    </Button>
+                  </NeumorphicCard>
                 )}
               </TabsContent>
             </Tabs>
@@ -706,12 +727,43 @@ export default function JNTUH() {
         )}
       </main>
 
-      <Footer />
+      {/* Bottom Navigation (Mobile) */}
+      <div className="fixed bottom-0 left-0 right-0 md:hidden bg-card border-t border-border safe-area-inset-bottom">
+        <div className="flex justify-around py-3">
+          <button className="flex flex-col items-center gap-1 text-primary min-h-[48px] px-4">
+            <GraduationCap className="h-5 w-5" />
+            <span className="text-xs font-medium">Home</span>
+          </button>
+          <button 
+            onClick={() => {}}
+            className="flex flex-col items-center gap-1 text-muted-foreground min-h-[48px] px-4"
+          >
+            <History className="h-5 w-5" />
+            <span className="text-xs">History</span>
+          </button>
+          <button className="flex flex-col items-center gap-1 text-muted-foreground min-h-[48px] px-4">
+            <BookOpen className="h-5 w-5" />
+            <span className="text-xs">Profile</span>
+          </button>
+        </div>
+      </div>
+
+      {/* WhatsApp Share FAB - only show on results */}
+      {result && activeTab === 'results' && (
+        <WhatsAppShare 
+          subject={selectedSubject || query || extractedSubject || 'JNTUH Exam Prep'}
+          summary={extractStrategySummary(result)}
+        />
+      )}
+      
+      <div className="hidden md:block">
+        <Footer />
+      </div>
       
       <LearningResources
         open={showResources}
         onOpenChange={setShowResources}
-        topic={query.trim() || extractedSubject || (selectedDepartment ? `${selectedDepartment.fullName} exam preparation` : 'study topics')}
+        topic={query.trim() || extractedSubject || selectedSubject || (selectedDepartment ? `${selectedDepartment.fullName} exam preparation` : 'study topics')}
         context={selectedDepartment?.fullName}
       />
     </div>
