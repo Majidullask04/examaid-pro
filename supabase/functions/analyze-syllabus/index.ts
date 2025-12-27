@@ -215,14 +215,13 @@ IMPORTANT: Generate output in this EXACT structure. Use ★ for years appeared, 
 
 ### UNIT 1: [Title from syllabus]
 
-| # | Question | Years Appeared | Hits | Confidence |
-|---|----------|----------------|------|------------|
-| 1 | [Actual question from papers] | 2024 ★, 2023 ★, 2022 ★, 2021 ★, 2019 ★ | 5/6 | 83% 🔥 |
-| 2 | [Question text] | 2024 ★, 2023 ★, 2022 ★ | 3/6 | 50% ⭐⭐⭐ |
-| 3 | [Question text] | 2023 ★, 2021 ★ | 2/6 | 33% ⭐⭐ |
+1. **[Topic/Question text]** — Years: 2024, 2023, 2022, 2021, 2019 (5/6) → 83% 🔥
+2. **[Topic/Question text]** — Years: 2024, 2023, 2022 (3/6) → 50% ⭐⭐⭐
+3. **[Topic/Question text]** — Years: 2023, 2021 (2/6) → 33% ⭐⭐
+4. **[Topic/Question text]** — Years: 2024, 2023, 2022, 2021, 2020, 2019 (6/6) → 100% 🔥🔥
 
 ### UNIT 2: [Title]
-(Same format - 4-5 questions per unit with confidence levels)
+(Same flowing list format - 4-6 questions per unit with inline confidence)
 
 ### UNIT 3: [Title]
 (Continue for ALL units in the syllabus)
