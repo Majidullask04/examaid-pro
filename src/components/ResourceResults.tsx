@@ -26,39 +26,6 @@ interface ResourceResultsProps {
   userId?: string | null;
 }
 
-// Helper function to safely open external links (works in iframes/webviews)
-const openExternalLink = (url: string, toast: (opts: { title: string; description?: string }) => void) => {
-  try {
-    // First try window.open
-    const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
-    
-    if (newWindow) {
-      return; // Success
-    }
-    
-    // If window.open failed (blocked or iframe), try top-level navigation
-    try {
-      const isFramed = window.self !== window.top;
-      if (isFramed && window.top) {
-        window.top.location.href = url;
-        return;
-      }
-    } catch {
-      // Cross-origin frame, can't access window.top
-    }
-    
-    // Fallback: navigate in same window
-    window.location.href = url;
-  } catch {
-    // Last resort: copy link and notify user
-    navigator.clipboard.writeText(url);
-    toast({
-      title: 'Link copied!',
-      description: 'Popup blocked. Link copied to clipboard - paste in your browser.',
-    });
-  }
-};
-
 export function ResourceResults({ 
   topic, 
   videos, 
@@ -72,10 +39,11 @@ export function ResourceResults({
   const [starringId, setStarringId] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const handleOpenLink = useCallback((url: string, e: React.MouseEvent) => {
+  const copyLink = useCallback((url: string, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    openExternalLink(url, toast);
+    navigator.clipboard.writeText(url);
+    toast({ title: 'Link copied!' });
   }, [toast]);
 
   const getSourceIcon = (source: string) => {
@@ -194,13 +162,6 @@ export function ResourceResults({
                 const resourceId = `video-${video.url}`;
                 const isStarred = starredResources.has(resourceId);
                 
-                const copyLink = (e: React.MouseEvent) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  navigator.clipboard.writeText(video.url);
-                  toast({ title: 'Link copied!' });
-                };
-                
                 return (
                   <Card 
                     key={index} 
@@ -234,7 +195,7 @@ export function ResourceResults({
                             variant="ghost"
                             size="icon"
                             className="h-6 w-6"
-                            onClick={copyLink}
+                            onClick={(e) => copyLink(video.url, e)}
                             title="Copy link"
                           >
                             <Copy className="h-3 w-3 text-muted-foreground" />
@@ -249,13 +210,16 @@ export function ResourceResults({
                           {video.description}
                         </p>
                       )}
-                      <button
-                        onClick={(e) => handleOpenLink(video.url, e)}
-                        className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline mt-2 cursor-pointer"
+                      {/* Pure anchor tag - opens in external browser */}
+                      <a
+                        href={video.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn-resource inline-flex items-center gap-1.5 text-xs text-primary hover:underline mt-2"
                       >
                         <ExternalLink className="h-3 w-3" />
                         Open on YouTube
-                      </button>
+                      </a>
                     </CardContent>
                   </Card>
                 );
@@ -278,13 +242,6 @@ export function ResourceResults({
               const resourceId = `article-${article.url}`;
               const isStarred = starredResources.has(resourceId);
               
-              const copyLink = (e: React.MouseEvent) => {
-                e.preventDefault();
-                e.stopPropagation();
-                navigator.clipboard.writeText(article.url);
-                toast({ title: 'Link copied!' });
-              };
-              
               return (
                 <Card 
                   key={index} 
@@ -302,13 +259,16 @@ export function ResourceResults({
                             {article.description}
                           </p>
                         )}
-                        <button
-                          onClick={(e) => handleOpenLink(article.url, e)}
-                          className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-2 cursor-pointer"
+                        {/* Pure anchor tag - opens in external browser */}
+                        <a
+                          href={article.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn-resource inline-flex items-center gap-1 text-xs text-primary hover:underline mt-2"
                         >
                           <ExternalLink className="h-3 w-3" />
                           Open article
-                        </button>
+                        </a>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0 self-end sm:self-center">
@@ -334,7 +294,7 @@ export function ResourceResults({
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8"
-                        onClick={copyLink}
+                        onClick={(e) => copyLink(article.url, e)}
                         title="Copy link"
                       >
                         <Copy className="h-4 w-4 text-muted-foreground" />

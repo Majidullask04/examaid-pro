@@ -1,154 +1,84 @@
 import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
-import { BookOpen, Brain, Target, Sparkles, ArrowRight, CheckCircle } from 'lucide-react';
-
-const features = [
-  {
-    icon: Target,
-    title: 'High-Probability Questions',
-    description: 'Focus on questions most likely to appear in your exams, prioritized by importance.',
-  },
-  {
-    icon: Brain,
-    title: 'AI-Powered Explanations',
-    description: 'Get instant, clear explanations for any question using advanced AI technology.',
-  },
-  {
-    icon: Sparkles,
-    title: 'Smart Revision Summaries',
-    description: 'Generate concise unit summaries to optimize your study time.',
-  },
-];
-
-const benefits = [
-  'Organized by subjects and units',
-  'Questions ranked by exam probability',
-  'Instant AI explanations',
-  'Deep concept breakdowns',
-  'Mobile-friendly interface',
-  'Regular content updates',
-];
+import { Target, Atom, BookOpen, FileText, ArrowRight, Sparkles } from 'lucide-react';
 
 export default function Index() {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-background">
       <Header />
       
-      <main className="flex-1">
-        {/* Hero Section */}
-        <section className="relative py-20 md:py-32 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent" />
-          <div className="container relative">
-            <div className="max-w-3xl mx-auto text-center space-y-6">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium">
-                <Sparkles className="h-4 w-4" />
-                AI-Powered Exam Preparation
-              </div>
-              
-              <h1 className="text-4xl md:text-6xl font-bold tracking-tight">
-                Study Smarter with{' '}
-                <span className="text-primary">ExamHelper</span>
-              </h1>
-              
-              <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
-                Access high-probability exam questions, get AI-powered explanations, 
-                and generate smart revision summaries. Your ultimate companion for exam success.
-              </p>
-              
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-                <Button size="lg" asChild className="gap-2 w-full sm:w-auto">
-                  <Link to="/jntuh">
-                    JNTUH R22 Analysis
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </Button>
-                <Button size="lg" variant="outline" asChild className="w-full sm:w-auto">
-                  <Link to="/subjects">Browse All Subjects</Link>
-                </Button>
-              </div>
-            </div>
-          </div>
-        </section>
+      <main className="flex-1 container px-4 py-8 max-w-lg mx-auto">
+        {/* Hero Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
+            Study Smarter with ExamHelper
+          </h1>
+          <p className="text-muted-foreground">
+            AI-powered exam preparation
+          </p>
+        </div>
 
-        {/* Features Section */}
-        <section className="py-16 md:py-24 bg-card">
-          <div className="container">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">
-                Everything You Need to Excel
-              </h2>
-              <p className="text-muted-foreground max-w-2xl mx-auto">
-                Powerful tools designed to help you study more effectively and ace your exams.
-              </p>
+        {/* 2x2 Feature Grid */}
+        <div className="grid grid-cols-2 gap-4 mb-8">
+          <div className="neumorphic p-5 rounded-2xl flex flex-col items-center text-center">
+            <div className="p-3 rounded-full bg-primary/10 mb-3">
+              <Target className="h-6 w-6 text-primary" />
             </div>
-            
-            <div className="grid md:grid-cols-3 gap-8">
-              {features.map((feature) => (
-                <div
-                  key={feature.title}
-                  className="relative p-6 rounded-xl border border-border bg-background hover:shadow-lg transition-all duration-300"
-                >
-                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-primary/10 text-primary mb-4">
-                    <feature.icon className="h-6 w-6" />
-                  </div>
-                  <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
-                  <p className="text-muted-foreground">{feature.description}</p>
-                </div>
-              ))}
-            </div>
+            <p className="font-semibold text-sm text-foreground">High-Probability Questions</p>
           </div>
-        </section>
+          
+          <div className="neumorphic p-5 rounded-2xl flex flex-col items-center text-center">
+            <div className="p-3 rounded-full bg-accent/10 mb-3">
+              <Atom className="h-6 w-6 text-accent-foreground" />
+            </div>
+            <p className="font-semibold text-sm text-foreground">AI-Structured Answers</p>
+          </div>
+        </div>
 
-        {/* Benefits Section */}
-        <section className="py-16 md:py-24">
-          <div className="container">
-            <div className="grid md:grid-cols-2 gap-12 items-center">
-              <div>
-                <h2 className="text-3xl md:text-4xl font-bold mb-6">
-                  Why Choose ExamHelper?
-                </h2>
-                <p className="text-muted-foreground mb-8">
-                  We've built the ultimate exam preparation platform with features that 
-                  actually help you learn and retain information effectively.
-                </p>
-                <ul className="space-y-4">
-                  {benefits.map((benefit) => (
-                    <li key={benefit} className="flex items-center gap-3">
-                      <CheckCircle className="h-5 w-5 text-primary shrink-0" />
-                      <span>{benefit}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              
-              <div className="relative">
-                <div className="aspect-square rounded-2xl bg-gradient-to-br from-primary/20 to-secondary/20 p-8 flex items-center justify-center">
-                  <BookOpen className="h-32 w-32 text-primary/40" />
-                </div>
-              </div>
+        {/* Center Action Button - Glossy Blue Pill */}
+        <div className="mb-8">
+          <Link 
+            to="/jntuh"
+            className="block w-full bg-gradient-to-r from-primary to-primary/80 text-primary-foreground py-5 px-6 rounded-full text-center font-semibold text-lg shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98]"
+          >
+            <div className="flex items-center justify-center gap-2">
+              <Sparkles className="h-5 w-5" />
+              <span>Start JNTUH R22 Analysis</span>
+              <ArrowRight className="h-5 w-5" />
             </div>
-          </div>
-        </section>
+            <span className="text-xs opacity-80 mt-1 block">Learning Hub</span>
+          </Link>
+        </div>
 
-        {/* CTA Section */}
-        <section className="py-16 md:py-24 bg-primary text-primary-foreground">
-          <div className="container text-center">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Ready to Ace Your Exams?
-            </h2>
-            <p className="text-primary-foreground/80 max-w-2xl mx-auto mb-8">
-              Join thousands of students who are already using ExamHelper to prepare smarter.
-            </p>
-            <Button size="lg" variant="secondary" asChild className="gap-2">
-              <Link to="/subjects">
-                Browse Subjects
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            </Button>
-          </div>
-        </section>
+        {/* Footer Vertical Cards */}
+        <div className="space-y-4">
+          <Link 
+            to="/subjects"
+            className="neumorphic p-5 rounded-2xl flex items-center gap-4 hover:scale-[1.01] transition-transform"
+          >
+            <div className="p-3 rounded-full bg-success/10">
+              <BookOpen className="h-6 w-6 text-success" />
+            </div>
+            <div>
+              <p className="font-semibold text-foreground">Notes & Video</p>
+              <p className="text-sm text-muted-foreground">Browse study materials</p>
+            </div>
+          </Link>
+          
+          <Link 
+            to="/subjects"
+            className="neumorphic p-5 rounded-2xl flex items-center gap-4 hover:scale-[1.01] transition-transform"
+          >
+            <div className="p-3 rounded-full bg-primary/10">
+              <FileText className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <p className="font-semibold text-foreground">Resources</p>
+              <p className="text-sm text-muted-foreground">Access all learning resources</p>
+            </div>
+          </Link>
+        </div>
       </main>
 
       <Footer />

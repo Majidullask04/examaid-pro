@@ -8,49 +8,49 @@
 
 @layer base {
   :root {
-    /* Neumorphic Base Colors */
-    --background: 220 16% 95%;
-    --foreground: 222 47% 11%;
+    /* Soft Pink & White Theme */
+    --background: 340 30% 97%;     /* #FCEBF2 - Matte Soft Pink */
+    --foreground: 340 30% 15%;
 
-    --card: 220 16% 96%;
-    --card-foreground: 222 47% 11%;
+    --card: 0 0% 100%;             /* Pure White cards */
+    --card-foreground: 340 30% 15%;
 
-    --popover: 220 16% 96%;
-    --popover-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 340 30% 15%;
 
-    /* Primary - Soft Blue */
-    --primary: 213 90% 65%;
+    /* Primary - Glossy Blue */
+    --primary: 213 90% 55%;
     --primary-foreground: 0 0% 100%;
 
-    /* Secondary - Muted */
-    --secondary: 220 14% 86%;
-    --secondary-foreground: 222 47% 11%;
+    /* Secondary - Soft Pink */
+    --secondary: 340 30% 92%;
+    --secondary-foreground: 340 30% 20%;
 
-    --muted: 220 14% 86%;
-    --muted-foreground: 220 10% 45%;
+    --muted: 340 20% 94%;
+    --muted-foreground: 340 15% 45%;
 
-    /* Accent */
-    --accent: 213 90% 65%;
+    /* Accent - Pink */
+    --accent: 340 50% 65%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84% 60%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    /* Success - Just Pass Green */
-    --success: 142 76% 45%;
+    /* Success - Green */
+    --success: 142 71% 45%;
     --success-foreground: 0 0% 100%;
 
-    --border: 220 14% 88%;
-    --input: 220 14% 88%;
-    --ring: 213 90% 65%;
+    --border: 340 20% 88%;
+    --input: 340 20% 88%;
+    --ring: 213 90% 55%;
 
     --radius: 1.25rem;
 
-    /* Neumorphic Shadows */
-    --shadow-neumorphic: 8px 8px 16px hsl(220 16% 85%), -8px -8px 16px hsl(0 0% 100%);
-    --shadow-neumorphic-inset: inset 4px 4px 8px hsl(220 16% 85%), inset -4px -4px 8px hsl(0 0% 100%);
-    --shadow-neumorphic-sm: 4px 4px 8px hsl(220 16% 85%), -4px -4px 8px hsl(0 0% 100%);
-    --shadow-neumorphic-pressed: inset 2px 2px 4px hsl(220 16% 85%), inset -2px -2px 4px hsl(0 0% 100%);
+    /* Neumorphic Shadows - Pink based */
+    --shadow-neumorphic: 8px 8px 16px hsl(340 20% 88%), -8px -8px 16px hsl(0 0% 100%);
+    --shadow-neumorphic-inset: inset 4px 4px 8px hsl(340 20% 88%), inset -4px -4px 8px hsl(0 0% 100%);
+    --shadow-neumorphic-sm: 4px 4px 8px hsl(340 20% 88%), -4px -4px 8px hsl(0 0% 100%);
+    --shadow-neumorphic-pressed: inset 2px 2px 4px hsl(340 20% 88%), inset -2px -2px 4px hsl(0 0% 100%);
 
     /* Standard Shadows */
     --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
