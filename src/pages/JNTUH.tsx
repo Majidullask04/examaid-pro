@@ -727,26 +727,28 @@ export default function JNTUH() {
         )}
       </main>
 
-      {/* Bottom Navigation (Mobile) */}
-      <div className="fixed bottom-0 left-0 right-0 md:hidden bg-card border-t border-border safe-area-inset-bottom">
-        <div className="flex justify-around py-3">
-          <button className="flex flex-col items-center gap-1 text-primary min-h-[48px] px-4">
-            <GraduationCap className="h-5 w-5" />
-            <span className="text-xs font-medium">Home</span>
-          </button>
-          <button 
-            onClick={() => {}}
-            className="flex flex-col items-center gap-1 text-muted-foreground min-h-[48px] px-4"
-          >
-            <History className="h-5 w-5" />
-            <span className="text-xs">History</span>
-          </button>
-          <button className="flex flex-col items-center gap-1 text-muted-foreground min-h-[48px] px-4">
-            <BookOpen className="h-5 w-5" />
-            <span className="text-xs">Profile</span>
-          </button>
+      {/* Bottom Navigation (Mobile) - Only show on results tab */}
+      {activeTab === 'results' && (
+        <div className="fixed bottom-0 left-0 right-0 md:hidden bg-card border-t border-border safe-area-inset-bottom">
+          <div className="flex justify-around py-3">
+            <button className="flex flex-col items-center gap-1 text-primary min-h-[48px] px-4">
+              <GraduationCap className="h-5 w-5" />
+              <span className="text-xs font-medium">Home</span>
+            </button>
+            <button 
+              onClick={() => {}}
+              className="flex flex-col items-center gap-1 text-muted-foreground min-h-[48px] px-4"
+            >
+              <History className="h-5 w-5" />
+              <span className="text-xs">History</span>
+            </button>
+            <button className="flex flex-col items-center gap-1 text-muted-foreground min-h-[48px] px-4">
+              <BookOpen className="h-5 w-5" />
+              <span className="text-xs">Profile</span>
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* WhatsApp Share FAB - only show on results */}
       {result && activeTab === 'results' && (

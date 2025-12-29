@@ -20,26 +20,7 @@ import {
   X
 } from 'lucide-react';
 
-// Helper function to force open external links in browser (outside of app/webview)
-const openExternalLink = (url: string) => {
-  // Primary method: window.open with features that hint at external browser
-  const newWindow = window.open(url, '_blank', 'noopener,noreferrer,menubar=yes,toolbar=yes,location=yes');
-  
-  if (newWindow) {
-    newWindow.focus();
-    return;
-  }
-  
-  // Fallback: Copy to clipboard if popup was blocked
-  navigator.clipboard.writeText(url).then(() => {
-    toast.success('Link copied! Paste in your browser to open.', {
-      duration: 5000,
-    });
-  }).catch(() => {
-    // Final fallback: show the URL in toast
-    toast.info(`Open this URL: ${url}`, { duration: 10000 });
-  });
-};
+// No helper function needed - using pure anchor tags with target="_blank"
 
 interface ResourceItem {
   title: string;
@@ -178,12 +159,14 @@ export function LearningResources({ open, onOpenChange, topic, context }: Learni
                           <CardContent className="p-3">
                             <div className="flex items-start justify-between gap-2">
                               <div className="flex-1 min-w-0">
-                                <button 
-                                  onClick={() => openExternalLink(video.url)}
-                                  className="font-medium text-sm hover:text-primary transition-colors line-clamp-2 text-left"
+                                <a 
+                                  href={video.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="font-medium text-sm hover:text-primary transition-colors line-clamp-2 text-left block"
                                 >
                                   {video.title}
-                                </button>
+                                </a>
                                 <div className="flex items-center gap-2 mt-1">
                                   {getSourceIcon(video.source)}
                                   <Badge variant="outline" className={`text-xs ${getSourceBadgeClass(video.source)}`}>
@@ -196,14 +179,14 @@ export function LearningResources({ open, onOpenChange, topic, context }: Learni
                                   </p>
                                 )}
                               </div>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="shrink-0"
-                                onClick={() => openExternalLink(video.url)}
+                              <a
+                                href={video.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="shrink-0 p-2 hover:bg-muted rounded-md transition-colors"
                               >
                                 <ExternalLink className="h-4 w-4" />
-                              </Button>
+                              </a>
                             </div>
                           </CardContent>
                         </Card>
@@ -233,12 +216,14 @@ export function LearningResources({ open, onOpenChange, topic, context }: Learni
                           <CardContent className="p-3">
                             <div className="flex items-start justify-between gap-2">
                               <div className="flex-1 min-w-0">
-                                <button 
-                                  onClick={() => openExternalLink(article.url)}
-                                  className="font-medium text-sm hover:text-primary transition-colors line-clamp-2 text-left"
+                                <a 
+                                  href={article.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="font-medium text-sm hover:text-primary transition-colors line-clamp-2 text-left block"
                                 >
                                   {article.title}
-                                </button>
+                                </a>
                                 <div className="flex items-center gap-2 mt-1">
                                   {getSourceIcon(article.source)}
                                   <Badge variant="outline" className={`text-xs ${getSourceBadgeClass(article.source)}`}>
@@ -251,14 +236,14 @@ export function LearningResources({ open, onOpenChange, topic, context }: Learni
                                   </p>
                                 )}
                               </div>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="shrink-0"
-                                onClick={() => openExternalLink(article.url)}
+                              <a
+                                href={article.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="shrink-0 p-2 hover:bg-muted rounded-md transition-colors"
                               >
                                 <ExternalLink className="h-4 w-4" />
-                              </Button>
+                              </a>
                             </div>
                           </CardContent>
                         </Card>
