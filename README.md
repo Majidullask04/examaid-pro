@@ -119,3 +119,4 @@ npm run dev
 # 5. Deploy edge functions (separate terminal)
 supabase functions deploy
 ```
+--test check "for jenkins self headaling process"
