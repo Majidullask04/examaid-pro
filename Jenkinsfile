@@ -7,12 +7,12 @@ pipeline {
         AWS_IP = '51.20.130.110'
     }
 
-    stages {
-        stage('Build Docker Image') {
+    stage('Build Docker Image') {
             steps {
                 script {
-                    echo 'Building Docker Image...'
-                    sh "docker build -t $DOCKER_IMAGE:latest ."
+                    echo 'Building Docker Image for Linux...'
+                    // This flag forces it to be compatible with your AWS server
+                    sh "docker build --platform linux/amd64 -t $DOCKER_IMAGE:latest ."
                 }
             }
         }
