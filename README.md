@@ -13,7 +13,7 @@
 ### 1. **Universal Syllabus Analysis**
 - **Any Subject**: Works for CSE (FLAT, CD, CNS), ECE, MECH, CIVIL, etc.
 - **Any Regulation**: R16, R18, R22, R23
-- **Auto-Detection**: Automatically identifies 4, 5, or 6-unit structures
+- **Auto-Detection**: Automatically identifies 3, 4, or 5-unit structures
 - **Multi-Language OCR**: Qwen 2.5 VL extracts text from any syllabus image/PDF
 
 ### 2. **AI-Powered Prediction Engine**
@@ -35,6 +35,7 @@
 - **Just Pass Mode**: Essential topics for minimum passing marks
 
 ---
+🔗 **Live Demo**: [https://knightsky.dpdns.org/](https://knightsky.dpdns.org/)
 
 ## 🏗️ System Architecture
 
