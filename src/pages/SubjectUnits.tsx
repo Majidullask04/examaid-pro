@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
@@ -16,13 +16,7 @@ export default function SubjectUnits() {
   const [questionCounts, setQuestionCounts] = useState<Record<string, number>>({});
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    if (subjectId) {
-      fetchSubjectAndUnits();
-    }
-  }, [subjectId]);
-
-  const fetchSubjectAndUnits = async () => {
+  const fetchSubjectAndUnits = useCallback(async () => {
     setIsLoading(true);
     try {
       // Fetch subject
@@ -60,12 +54,18 @@ export default function SubjectUnits() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [subjectId]);
+
+  useEffect(() => {
+    if (subjectId) {
+      fetchSubjectAndUnits();
+    }
+  }, [subjectId, fetchSubjectAndUnits]);
 
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-      
+
       <main className="flex-1 py-8 md:py-12">
         <div className="container">
           <Button variant="ghost" size="sm" asChild className="mb-6 -ml-2">

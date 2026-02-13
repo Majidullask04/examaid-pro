@@ -11,6 +11,7 @@ import { SyllabusUploader } from '@/components/SyllabusUploader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { NeumorphicCard } from '@/components/neumorphic/NeumorphicCard';
 import { StudyGoalToggle } from '@/components/neumorphic/StudyGoalToggle';
+import { AnalysisPipeline } from '@/components/neumorphic/AnalysisPipeline';
 import { ThinkingAnimation } from '@/components/neumorphic/ThinkingAnimation';
 import { WhatsAppShare } from '@/components/neumorphic/WhatsAppShare';
 import { PanicModeButton } from '@/components/neumorphic/PanicModeButton';
@@ -18,15 +19,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
-import { 
-  Cpu, 
-  Radio, 
-  Zap, 
-  Cog, 
-  Building2, 
-  MonitorSmartphone, 
-  BrainCircuit, 
-  Database, 
+import { useSyllabusAnalysis, PipelineStage } from '@/hooks/useSyllabusAnalysis';
+import {
+  Cpu,
+  Radio,
+  Zap,
+  Cog,
+  Building2,
+  MonitorSmartphone,
+  BrainCircuit,
+  Database,
   Bot,
   ArrowLeft,
   Sparkles,
@@ -96,24 +98,6 @@ const getSavedDepartment = (): Department | null => {
   return null;
 };
 
-// Helper to extract subject name from analysis result
-const extractSubjectFromResult = (text: string): string | null => {
-  const patterns = [
-    /Subject[:\s]+([A-Za-z\s&]+?)(?:\n|,|\.|$)/i,
-    /SUBJECT NAME[:\s]+([A-Za-z\s&]+?)(?:\n|,|\.|$)/i,
-    /analyzing[:\s]+([A-Za-z\s&]+?)(?:\n|,|\.|syllabus)/i,
-    /for[:\s]+([A-Za-z\s&]+?)(?:\n|,|\.|syllabus)/i,
-  ];
-  
-  for (const pattern of patterns) {
-    const match = text.match(pattern);
-    if (match && match[1] && match[1].trim().length > 3) {
-      return match[1].trim();
-    }
-  }
-  return null;
-};
-
 // Extract strategy summary from result
 const extractStrategySummary = (text: string): string => {
   // Look for key insights in the result
@@ -139,12 +123,24 @@ export default function JNTUH() {
   const [sessionId] = useState(getSessionId);
   const [showResources, setShowResources] = useState(false);
   const [isSyllabusMode, setIsSyllabusMode] = useState(true);
-  const [syllabusProcessing, setSyllabusProcessing] = useState(false);
-  const [syllabusStage, setSyllabusStage] = useState('');
   const [extractedSubject, setExtractedSubject] = useState<string>('');
   const [activeTab, setActiveTab] = useState<string>('input');
   const [panicMode, setPanicMode] = useState(false);
   const resultRef = useRef<HTMLDivElement>(null);
+
+  // Use the new custom hook
+  const { analyzeSyllabus, isProcessing: syllabusProcessing, stage: syllabusStage, pipelineStage } = useSyllabusAnalysis({
+    sessionId,
+    selectedDepartment,
+    panicMode,
+    onSuccess: (fullText, subject) => {
+      setResult(fullText);
+      if (subject) {
+        setExtractedSubject(subject);
+      }
+      setActiveTab('results');
+    }
+  });
 
   // Save department selection
   useEffect(() => {
@@ -204,110 +200,8 @@ export default function JNTUH() {
     }
   };
 
-  // Handle syllabus image analysis
-  const handleSyllabusAnalysis = async (imageBase64: string, goal: 'pass' | 'high_marks') => {
-    if (!selectedDepartment) {
-      toast.error('Please select a department first');
-      return;
-    }
-
-    setSyllabusProcessing(true);
-    setResult('');
-    setSyllabusStage('Stage 1: Analyzing syllabus image...');
-
-    try {
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analyze-syllabus`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          'Content-Type': 'application/json',
-          'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          'x-session-id': sessionId,
-        },
-        body: JSON.stringify({
-          imageBase64,
-          department: selectedDepartment.fullName,
-          studyGoal: goal,
-          panicMode,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`API error: ${response.status} - ${errorText}`);
-      }
-
-      const reader = response.body?.getReader();
-      if (!reader) {
-        throw new Error('No response body');
-      }
-
-      const decoder = new TextDecoder();
-      let fullText = '';
-      let buffer = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6).trim();
-            if (data === '[DONE]') continue;
-
-            try {
-              const parsed = JSON.parse(data);
-              
-              if (parsed.stage === 'web_search_complete') {
-                setSyllabusStage('Stage 2: Searching JNTUH papers (2019-2024)...');
-              } else if (parsed.stage === 'analysis' && parsed.content) {
-                fullText += parsed.content;
-                setResult(fullText);
-                
-                if (fullText.includes('METHODOLOGY')) {
-                  setSyllabusStage('Stage 3: Building methodology & hit ratios...');
-                }
-                if (fullText.includes('YEAR-WISE HIT RATIO') || fullText.includes('Hit Ratio')) {
-                  setSyllabusStage('Stage 4: Generating high probability questions...');
-                }
-                if (fullText.includes('HIGH PROBABILITY QUESTIONS')) {
-                  setSyllabusStage('Stage 4: Generating high probability questions...');
-                }
-                if (fullText.includes('SUGGESTED APPROACH') || fullText.includes('Phase 1:')) {
-                  setSyllabusStage('Stage 5: Creating study approach...');
-                }
-              }
-            } catch {
-              // Skip invalid JSON
-            }
-          }
-        }
-      }
-
-      if (fullText.trim()) {
-        await saveToHistory(selectedDepartment.name, `Syllabus Analysis (${goal})`, fullText);
-        const subject = extractSubjectFromResult(fullText);
-        if (subject) {
-          setExtractedSubject(subject);
-        }
-        setActiveTab('results');
-        toast.success('Analysis complete!');
-      } else {
-        toast.error('🛏️ Our AI is taking a nap. Try again in 10 seconds.');
-      }
-
-      setSyllabusStage('');
-    } catch (error) {
-      console.error('Error:', error);
-      toast.error('🛏️ Our AI is taking a nap. Try again in 10 seconds.');
-    } finally {
-      setSyllabusProcessing(false);
-      setSyllabusStage('');
-    }
+  const handleSyllabusAnalysis = (imageBase64: string, goal: 'pass' | 'high_marks') => {
+    analyzeSyllabus(imageBase64, goal);
   };
 
   const handleSearch = async () => {
@@ -327,11 +221,11 @@ export default function JNTUH() {
     setProcessingStage('Stage 1: Researching syllabus & patterns...');
 
     try {
-      const panicModePrompt = panicMode 
-        ? 'IMPORTANT: This is LAST MINUTE PREP mode. Only give me the TOP 10 most critical questions across ALL units. No fluff, just the essentials.' 
+      const panicModePrompt = panicMode
+        ? 'IMPORTANT: This is LAST MINUTE PREP mode. Only give me the TOP 10 most critical questions across ALL units. No fluff, just the essentials.'
         : '';
-      
-      const goalPrompt = studyGoal === 'pass' 
+
+      const goalPrompt = studyGoal === 'pass'
         ? 'Focus on easy-to-learn topics that appear frequently. Goal: Just pass the exam with minimum effort.'
         : 'Include all important topics for maximum marks. Goal: Score high marks.';
 
@@ -344,10 +238,10 @@ export default function JNTUH() {
           'Content-Type': 'application/json',
           'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
         },
-        body: JSON.stringify({ 
-          question: enhancedQuery, 
-          answer: null, 
-          type: 'deep' 
+        body: JSON.stringify({
+          question: enhancedQuery,
+          answer: null,
+          type: 'deep'
         }),
       });
 
@@ -385,7 +279,7 @@ export default function JNTUH() {
               if (content) {
                 fullText += content;
                 setResult(fullText);
-                
+
                 if (fullText.length > 100 && stageCount === 0) {
                   setProcessingStage('Stage 2: Deep pattern analysis...');
                   stageCount = 1;
@@ -414,8 +308,8 @@ export default function JNTUH() {
 
       setProcessingStage('');
     } catch (error) {
-      console.error('Error:', error);
-      toast.error('🛏️ Our AI is taking a nap. Try again in 10 seconds.');
+      console.error('Analysis Failed Detailed Error:', error);
+      toast.error(error instanceof Error ? error.message : 'Analysis produced no results. Please try again.');
     } finally {
       setIsProcessing(false);
       setProcessingStage('');
@@ -437,7 +331,7 @@ export default function JNTUH() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
-      
+
       <main className="flex-1 container py-6 px-4 max-w-2xl mx-auto">
         {/* Compact Header */}
         <div className="text-center mb-6">
@@ -468,7 +362,7 @@ export default function JNTUH() {
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               {departments.map((dept) => (
-                <NeumorphicCard 
+                <NeumorphicCard
                   key={dept.id}
                   interactive
                   className="text-center cursor-pointer"
@@ -492,8 +386,8 @@ export default function JNTUH() {
           <div className="space-y-6">
             {/* Back Button and Department Badge */}
             <div className="flex items-center justify-between">
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 size="sm"
                 onClick={() => {
                   setSelectedDepartment(null);
@@ -507,6 +401,10 @@ export default function JNTUH() {
                 Back
               </Button>
               <div className="flex items-center gap-2">
+                <Badge variant="outline" className="gap-1 text-xs border-primary/20 bg-primary/5 text-primary hidden sm:flex">
+                  <Sparkles className="h-3 w-3" />
+                  Gemini 2.0 Flash
+                </Badge>
                 <Badge variant="secondary" className="gap-1">
                   <selectedDepartment.icon className="h-3 w-3" />
                   {selectedDepartment.name}
@@ -535,7 +433,17 @@ export default function JNTUH() {
                 {/* Processing State */}
                 {isLoading ? (
                   <NeumorphicCard className="py-8">
-                    <ThinkingAnimation stage={currentStage} />
+                    <AnalysisPipeline
+                      currentStage={
+                        syllabusProcessing
+                          ? (pipelineStage || 'vision')
+                          : (processingStage.toLowerCase().includes('search') ? 'search'
+                            : processingStage.toLowerCase().includes('paper') ? 'search'
+                              : processingStage.toLowerCase().includes('plan') ? 'fusion'
+                                : 'brain') as PipelineStage
+                      }
+                      statusText={syllabusProcessing ? syllabusStage : processingStage}
+                    />
                   </NeumorphicCard>
                 ) : (
                   <>
@@ -584,8 +492,8 @@ export default function JNTUH() {
                       <label className="text-sm font-medium text-muted-foreground">
                         🎯 Your Goal
                       </label>
-                      <StudyGoalToggle 
-                        value={studyGoal} 
+                      <StudyGoalToggle
+                        value={studyGoal}
                         onChange={setStudyGoal}
                         disabled={isLoading}
                       />
@@ -606,11 +514,10 @@ export default function JNTUH() {
                         <button
                           onClick={() => setIsSyllabusMode(true)}
                           disabled={isLoading}
-                          className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-[12px] font-medium text-sm transition-all min-h-[48px] ${
-                            isSyllabusMode 
-                              ? 'bg-card neumorphic-sm text-foreground' 
-                              : 'text-muted-foreground hover:text-foreground'
-                          }`}
+                          className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-[12px] font-medium text-sm transition-all min-h-[48px] ${isSyllabusMode
+                            ? 'bg-card neumorphic-sm text-foreground'
+                            : 'text-muted-foreground hover:text-foreground'
+                            }`}
                         >
                           <ImageIcon className="h-4 w-4" />
                           Upload Syllabus
@@ -618,11 +525,10 @@ export default function JNTUH() {
                         <button
                           onClick={() => setIsSyllabusMode(false)}
                           disabled={isLoading}
-                          className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-[12px] font-medium text-sm transition-all min-h-[48px] ${
-                            !isSyllabusMode 
-                              ? 'bg-card neumorphic-sm text-foreground' 
-                              : 'text-muted-foreground hover:text-foreground'
-                          }`}
+                          className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-[12px] font-medium text-sm transition-all min-h-[48px] ${!isSyllabusMode
+                            ? 'bg-card neumorphic-sm text-foreground'
+                            : 'text-muted-foreground hover:text-foreground'
+                            }`}
                         >
                           <FileText className="h-4 w-4" />
                           Quick Query
@@ -632,7 +538,7 @@ export default function JNTUH() {
 
                     {isSyllabusMode ? (
                       /* Syllabus Upload */
-                      <SyllabusUploader 
+                      <SyllabusUploader
                         onAnalyze={(imageBase64) => handleSyllabusAnalysis(imageBase64, studyGoal)}
                         isProcessing={syllabusProcessing}
                         processingStage={syllabusStage}
@@ -713,7 +619,7 @@ export default function JNTUH() {
                     <p className="text-sm text-muted-foreground mb-4">
                       Upload a syllabus or enter a query to get AI analysis
                     </p>
-                    <Button 
+                    <Button
                       onClick={() => setActiveTab('input')}
                       className="btn-neumorphic-primary"
                     >
@@ -735,10 +641,9 @@ export default function JNTUH() {
               <GraduationCap className="h-5 w-5" />
               <span className="text-xs font-medium">Home</span>
             </button>
-            <button 
-              onClick={() => {}}
-              className="flex flex-col items-center gap-1 text-muted-foreground min-h-[48px] px-4"
-            >
+            <button
+              onClick={() => { }}
+              className="flex flex-col items-center gap-1 text-muted-foreground min-h-[48px] px-4">
               <History className="h-5 w-5" />
               <span className="text-xs">History</span>
             </button>
@@ -752,16 +657,16 @@ export default function JNTUH() {
 
       {/* WhatsApp Share FAB - only show on results */}
       {result && activeTab === 'results' && (
-        <WhatsAppShare 
+        <WhatsAppShare
           subject={selectedSubject || query || extractedSubject || 'JNTUH Exam Prep'}
           summary={extractStrategySummary(result)}
         />
       )}
-      
+
       <div className="hidden md:block">
         <Footer />
       </div>
-      
+
       <LearningResources
         open={showResources}
         onOpenChange={setShowResources}

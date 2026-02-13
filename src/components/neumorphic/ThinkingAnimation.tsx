@@ -6,9 +6,17 @@ interface ThinkingAnimationProps {
   className?: string;
 }
 
+const SearchingImage = ({ className }: { className?: string }) => (
+  <img
+    src="/logo.jpeg"
+    alt="Searching"
+    className={cn("rounded-full object-cover", className)}
+  />
+);
+
 const stageConfig: Record<string, { icon: React.ElementType; text: string; color: string }> = {
   "analyzing": { icon: Brain, text: "DeepSeek is reasoning", color: "text-primary" },
-  "searching": { icon: Search, text: "Perplexity is finding papers", color: "text-chart-2" },
+  "searching": { icon: SearchingImage, text: "Perplexity is finding papers", color: "text-chart-2" },
   "building": { icon: BarChart3, text: "Building hit ratio analysis", color: "text-chart-3" },
   "generating": { icon: Sparkles, text: "Creating your study plan", color: "text-chart-5" },
   "default": { icon: Loader2, text: "Processing", color: "text-muted-foreground" },
@@ -17,7 +25,7 @@ const stageConfig: Record<string, { icon: React.ElementType; text: string; color
 export function ThinkingAnimation({ stage, className }: ThinkingAnimationProps) {
   // Determine which config to use based on stage text
   let config = stageConfig.default;
-  
+
   if (stage.toLowerCase().includes("analyzing") || stage.toLowerCase().includes("stage 1")) {
     config = stageConfig.analyzing;
   } else if (stage.toLowerCase().includes("searching") || stage.toLowerCase().includes("stage 2") || stage.toLowerCase().includes("papers")) {

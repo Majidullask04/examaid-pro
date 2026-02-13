@@ -21,19 +21,19 @@ export default function Admin() {
   const { user, isAdmin, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  
+
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [units, setUnits] = useState<Unit[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  
+
   // Subject form
   const [subjectDialogOpen, setSubjectDialogOpen] = useState(false);
   const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
   const [subjectName, setSubjectName] = useState('');
   const [subjectDescription, setSubjectDescription] = useState('');
   const [subjectIcon, setSubjectIcon] = useState('');
-  
+
   // Unit form
   const [unitDialogOpen, setUnitDialogOpen] = useState(false);
   const [editingUnit, setEditingUnit] = useState<Unit | null>(null);
@@ -41,7 +41,7 @@ export default function Admin() {
   const [unitTitle, setUnitTitle] = useState('');
   const [unitNumber, setUnitNumber] = useState('');
   const [unitDescription, setUnitDescription] = useState('');
-  
+
   // Question form
   const [questionDialogOpen, setQuestionDialogOpen] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
@@ -49,7 +49,7 @@ export default function Admin() {
   const [questionText, setQuestionText] = useState('');
   const [questionAnswer, setQuestionAnswer] = useState('');
   const [questionImportance, setQuestionImportance] = useState<QuestionImportance>('medium');
-  
+
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -77,7 +77,7 @@ export default function Admin() {
         supabase.from('units').select('*').order('unit_number'),
         supabase.from('questions').select('*').order('created_at', { ascending: false }),
       ]);
-      
+
       setSubjects(subjectsRes.data || []);
       setUnits(unitsRes.data || []);
       setQuestions(questionsRes.data || []);
@@ -107,7 +107,7 @@ export default function Admin() {
   const saveSubject = async () => {
     if (!subjectName.trim()) return;
     setIsSubmitting(true);
-    
+
     try {
       if (editingSubject) {
         const { error } = await supabase
@@ -125,8 +125,10 @@ export default function Admin() {
       }
       setSubjectDialogOpen(false);
       fetchData();
-    } catch (error: any) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } catch (error) {
+      console.error('Error saving subject:', error);
+      const message = error instanceof Error ? error.message : 'An unknown error occurred';
+      toast({ title: 'Error', description: message, variant: 'destructive' });
     } finally {
       setIsSubmitting(false);
     }
@@ -134,14 +136,16 @@ export default function Admin() {
 
   const deleteSubject = async (id: string) => {
     if (!confirm('Delete this subject? All units and questions will also be deleted.')) return;
-    
+
     try {
       const { error } = await supabase.from('subjects').delete().eq('id', id);
       if (error) throw error;
       toast({ title: 'Subject deleted' });
       fetchData();
-    } catch (error: any) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } catch (error) {
+      console.error('Error deleting:', error);
+      const message = error instanceof Error ? error.message : 'An unknown error occurred';
+      toast({ title: 'Error', description: message, variant: 'destructive' });
     }
   };
 
@@ -166,16 +170,16 @@ export default function Admin() {
   const saveUnit = async () => {
     if (!unitSubjectId || !unitTitle.trim() || !unitNumber) return;
     setIsSubmitting(true);
-    
+
     try {
       if (editingUnit) {
         const { error } = await supabase
           .from('units')
-          .update({ 
-            subject_id: unitSubjectId, 
-            title: unitTitle, 
+          .update({
+            subject_id: unitSubjectId,
+            title: unitTitle,
             unit_number: parseInt(unitNumber),
-            description: unitDescription || null 
+            description: unitDescription || null
           })
           .eq('id', editingUnit.id);
         if (error) throw error;
@@ -183,19 +187,21 @@ export default function Admin() {
       } else {
         const { error } = await supabase
           .from('units')
-          .insert({ 
-            subject_id: unitSubjectId, 
-            title: unitTitle, 
+          .insert({
+            subject_id: unitSubjectId,
+            title: unitTitle,
             unit_number: parseInt(unitNumber),
-            description: unitDescription || null 
+            description: unitDescription || null
           });
         if (error) throw error;
         toast({ title: 'Unit created successfully' });
       }
       setUnitDialogOpen(false);
       fetchData();
-    } catch (error: any) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } catch (error) {
+      console.error('Error saving unit:', error);
+      const message = error instanceof Error ? error.message : 'An unknown error occurred';
+      toast({ title: 'Error', description: message, variant: 'destructive' });
     } finally {
       setIsSubmitting(false);
     }
@@ -203,14 +209,16 @@ export default function Admin() {
 
   const deleteUnit = async (id: string) => {
     if (!confirm('Delete this unit? All questions will also be deleted.')) return;
-    
+
     try {
       const { error } = await supabase.from('units').delete().eq('id', id);
       if (error) throw error;
       toast({ title: 'Unit deleted' });
       fetchData();
-    } catch (error: any) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } catch (error) {
+      console.error('Error deleting:', error);
+      const message = error instanceof Error ? error.message : 'An unknown error occurred';
+      toast({ title: 'Error', description: message, variant: 'destructive' });
     }
   };
 
@@ -235,16 +243,16 @@ export default function Admin() {
   const saveQuestion = async () => {
     if (!questionUnitId || !questionText.trim()) return;
     setIsSubmitting(true);
-    
+
     try {
       if (editingQuestion) {
         const { error } = await supabase
           .from('questions')
-          .update({ 
-            unit_id: questionUnitId, 
-            question: questionText, 
+          .update({
+            unit_id: questionUnitId,
+            question: questionText,
             answer: questionAnswer || null,
-            importance: questionImportance 
+            importance: questionImportance
           })
           .eq('id', editingQuestion.id);
         if (error) throw error;
@@ -252,19 +260,21 @@ export default function Admin() {
       } else {
         const { error } = await supabase
           .from('questions')
-          .insert({ 
-            unit_id: questionUnitId, 
-            question: questionText, 
+          .insert({
+            unit_id: questionUnitId,
+            question: questionText,
             answer: questionAnswer || null,
-            importance: questionImportance 
+            importance: questionImportance
           });
         if (error) throw error;
         toast({ title: 'Question created successfully' });
       }
       setQuestionDialogOpen(false);
       fetchData();
-    } catch (error: any) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } catch (error) {
+      console.error('Error saving question:', error);
+      const message = error instanceof Error ? error.message : 'An unknown error occurred';
+      toast({ title: 'Error', description: message, variant: 'destructive' });
     } finally {
       setIsSubmitting(false);
     }
@@ -272,14 +282,16 @@ export default function Admin() {
 
   const deleteQuestion = async (id: string) => {
     if (!confirm('Delete this question?')) return;
-    
+
     try {
       const { error } = await supabase.from('questions').delete().eq('id', id);
       if (error) throw error;
       toast({ title: 'Question deleted' });
       fetchData();
-    } catch (error: any) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } catch (error) {
+      console.error('Error deleting unit:', error);
+      const message = error instanceof Error ? error.message : 'An unknown error occurred';
+      toast({ title: 'Error', description: message, variant: 'destructive' });
     }
   };
 
@@ -300,7 +312,7 @@ export default function Admin() {
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-      
+
       <main className="flex-1 py-8 md:py-12">
         <div className="container">
           <div className="flex items-center gap-3 mb-8">
@@ -446,10 +458,9 @@ export default function Admin() {
                             {getUnitTitle(question.unit_id)}
                           </TableCell>
                           <TableCell>
-                            <span className={`capitalize ${
-                              question.importance === 'high' ? 'text-destructive' :
+                            <span className={`capitalize ${question.importance === 'high' ? 'text-destructive' :
                               question.importance === 'medium' ? 'text-primary' : ''
-                            }`}>
+                              }`}>
                               {question.importance}
                             </span>
                           </TableCell>

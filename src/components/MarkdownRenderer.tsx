@@ -19,7 +19,7 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
 
     const processInlineFormatting = (line: string): JSX.Element[] => {
       const parts: JSX.Element[] = [];
-      let remaining = line;
+      const remaining = line;
       let key = 0;
 
       // Process bold, italic, code, and links
@@ -149,7 +149,7 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
       if (line.includes('|') && line.trim().startsWith('|')) {
         flushList();
         const cells = line.split('|').filter(cell => cell.trim() !== '');
-        
+
         // Check if it's a separator row
         if (cells.every(cell => cell.trim().match(/^[-:]+$/))) {
           inTable = true;

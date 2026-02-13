@@ -17,6 +17,11 @@ interface SpeechRecognitionInstance extends EventTarget {
   onend: () => void;
 }
 
+interface IWindow extends Window {
+  SpeechRecognition: new () => SpeechRecognitionInstance;
+  webkitSpeechRecognition: new () => SpeechRecognitionInstance;
+}
+
 interface AskModeProps {
   syllabusKeywords: string[];
   isLoading: boolean;
@@ -38,7 +43,7 @@ export function AskMode({ syllabusKeywords, isLoading, onSubmit }: AskModeProps)
   // Initialize speech recognition
   useEffect(() => {
     if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      const SpeechRecognition = (window as unknown as IWindow).SpeechRecognition || (window as unknown as IWindow).webkitSpeechRecognition;
       recognitionRef.current = new SpeechRecognition();
       recognitionRef.current.continuous = false;
       recognitionRef.current.interimResults = false;
@@ -75,7 +80,7 @@ export function AskMode({ syllabusKeywords, isLoading, onSubmit }: AskModeProps)
   // Toggle voice input
   const toggleVoice = () => {
     if (!recognitionRef.current) return;
-    
+
     if (isListening) {
       recognitionRef.current.stop();
       setIsListening(false);
@@ -120,11 +125,10 @@ export function AskMode({ syllabusKeywords, isLoading, onSubmit }: AskModeProps)
             <button
               type="button"
               onClick={toggleVoice}
-              className={`absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-full transition-colors ${
-                isListening 
-                  ? 'bg-destructive text-destructive-foreground animate-pulse' 
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-              }`}
+              className={`absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-full transition-colors ${isListening
+                ? 'bg-destructive text-destructive-foreground animate-pulse'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                }`}
               disabled={isLoading}
             >
               <Mic className="h-5 w-5" />

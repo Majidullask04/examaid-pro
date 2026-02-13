@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Plus, Trash2, Edit2, Save, X, FileText, Loader2, BookOpen, Star, ExternalLink, Bot, Youtube } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -44,9 +44,9 @@ export function StudyNotes({ userId }: StudyNotesProps) {
     } else {
       setIsLoading(false);
     }
-  }, [userId]);
+  }, [userId, fetchNotes, fetchStarredItems]);
 
-  const fetchNotes = async () => {
+  const fetchNotes = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('study_notes')
@@ -54,7 +54,7 @@ export function StudyNotes({ userId }: StudyNotesProps) {
         .order('updated_at', { ascending: false });
 
       if (error) throw error;
-      
+
       const transformedNotes: StudyNote[] = (data || []).map(note => ({
         id: note.id,
         user_id: note.user_id,
@@ -63,11 +63,11 @@ export function StudyNotes({ userId }: StudyNotesProps) {
         topic: note.topic,
         created_at: note.created_at,
         updated_at: note.updated_at,
-        resources: Array.isArray(note.resources) 
-          ? (note.resources as unknown as ResourceItem[]) 
+        resources: Array.isArray(note.resources)
+          ? (note.resources as unknown as ResourceItem[])
           : []
       }));
-      
+
       setNotes(transformedNotes);
     } catch (error) {
       console.error('Error fetching notes:', error);
@@ -79,9 +79,9 @@ export function StudyNotes({ userId }: StudyNotesProps) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [toast]);
 
-  const fetchStarredItems = async () => {
+  const fetchStarredItems = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('starred_items')
@@ -89,12 +89,12 @@ export function StudyNotes({ userId }: StudyNotesProps) {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      
+
       setStarredItems((data || []) as StarredItem[]);
     } catch (error) {
       console.error('Error fetching starred items:', error);
     }
-  };
+  }, []);
 
   const createNote = async () => {
     if (!userId || !newNote.title.trim()) return;
@@ -450,10 +450,10 @@ export function StudyNotes({ userId }: StudyNotesProps) {
             {resources.map((item) => {
               const metadata = item.metadata as { url?: string; source?: string; type?: string };
               const isVideo = metadata.type === 'video';
-              
+
               return (
-                <Card 
-                  key={item.id} 
+                <Card
+                  key={item.id}
                   className="hover:shadow-md transition-shadow cursor-pointer group"
                   onClick={() => metadata.url && window.open(metadata.url, '_blank')}
                 >

@@ -58,7 +58,7 @@ serve(async (req) => {
   try {
     const { question, messages = [] } = await req.json();
     const OPENROUTER_API_KEY = Deno.env.get('OPENROUTER_API_KEY');
-    
+
     if (!OPENROUTER_API_KEY) {
       console.error('OPENROUTER_API_KEY is not configured');
       throw new Error('AI service is not configured');
@@ -83,7 +83,7 @@ serve(async (req) => {
       headers: {
         'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
         'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://jntuh-exam-prep.lovable.app',
+        'HTTP-Referer': 'https://examaid-pro.vercel.app',
         'X-Title': 'JNTUH Exam Prep',
       },
       body: JSON.stringify({
@@ -105,21 +105,21 @@ serve(async (req) => {
           { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
-      
+
       if (response.status === 429) {
         return new Response(
           JSON.stringify({ error: 'Rate limit exceeded. Please try again in a moment.' }),
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
-      
+
       if (response.status === 402) {
         return new Response(
           JSON.stringify({ error: 'OpenRouter credits exhausted. Please add credits to your OpenRouter account.' }),
           { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
-      
+
       throw new Error(`OpenRouter API error: ${response.status}`);
     }
 

@@ -2,11 +2,11 @@ import { useState, useRef, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Camera, 
-  Upload, 
-  X, 
-  Image as ImageIcon, 
+import {
+  Camera,
+  Upload,
+  X,
+  Image as ImageIcon,
   Target,
   Trophy,
   Loader2,
@@ -90,7 +90,7 @@ export function SyllabusUploader({ onAnalyze, isProcessing, processingStage }: S
   return (
     <div className="space-y-4">
       {/* Image Upload Area */}
-      <Card 
+      <Card
         className={cn(
           "border-2 border-dashed transition-all duration-300",
           isDragging && "border-primary bg-primary/5",
@@ -113,16 +113,16 @@ export function SyllabusUploader({ onAnalyze, isProcessing, processingStage }: S
                 </p>
               </div>
               <div className="flex flex-wrap gap-3 justify-center">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isProcessing}
                 >
                   <Upload className="h-4 w-4 mr-2" />
                   Upload Image
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={() => cameraInputRef.current?.click()}
                   disabled={isProcessing}
                 >
@@ -154,9 +154,9 @@ export function SyllabusUploader({ onAnalyze, isProcessing, processingStage }: S
             <div className="space-y-4">
               {/* Image Preview */}
               <div className="relative">
-                <img 
-                  src={imagePreview} 
-                  alt="Syllabus preview" 
+                <img
+                  src={imagePreview}
+                  alt="Syllabus preview"
                   className="w-full max-h-[300px] object-contain rounded-lg border"
                 />
                 <Button
@@ -207,14 +207,14 @@ export function SyllabusUploader({ onAnalyze, isProcessing, processingStage }: S
               </Button>
             </div>
           </div>
-          
+
           {/* Goal Description */}
           <div className="mt-3 p-3 rounded-lg bg-muted/50">
             {studyGoal === 'pass' ? (
               <div className="flex items-start gap-2">
                 <Badge variant="secondary" className="text-xs">😅 Just Pass</Badge>
                 <p className="text-xs text-muted-foreground">
-                  Focus on high-frequency questions only. Minimum effort for passing marks. 
+                  Focus on high-frequency questions only. Minimum effort for passing marks.
                   Skip complex derivations, prioritize definitions & diagrams.
                 </p>
               </div>
@@ -222,7 +222,7 @@ export function SyllabusUploader({ onAnalyze, isProcessing, processingStage }: S
               <div className="flex items-start gap-2">
                 <Badge variant="default" className="text-xs">🏆 High Marks</Badge>
                 <p className="text-xs text-muted-foreground">
-                  Comprehensive coverage of all topics. Includes derivations, proofs, 
+                  Comprehensive coverage of all topics. Includes derivations, proofs,
                   and application-based questions. Aim for 80%+ marks.
                 </p>
               </div>
@@ -233,11 +233,12 @@ export function SyllabusUploader({ onAnalyze, isProcessing, processingStage }: S
 
       {/* Analyze Button */}
       {imagePreview && (
-        <Button 
+        <Button
           onClick={handleAnalyze}
           disabled={isProcessing || !imageBase64}
-          className="w-full gap-2"
+          className="w-full gap-2 transition-all duration-300"
           size="lg"
+          variant={isProcessing ? "secondary" : "default"}
         >
           {isProcessing ? (
             <>

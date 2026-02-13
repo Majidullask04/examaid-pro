@@ -36,9 +36,9 @@ export default function UnitQuestions() {
     if (unitId) {
       fetchUnitAndQuestions();
     }
-  }, [unitId]);
+  }, [unitId, fetchUnitAndQuestions]);
 
-  const fetchUnitAndQuestions = async () => {
+  const fetchUnitAndQuestions = useCallback(async () => {
     setIsLoading(true);
     try {
       // Fetch unit
@@ -69,20 +69,20 @@ export default function UnitQuestions() {
         .order('importance');
 
       if (questionsError) throw questionsError;
-      
+
       // Sort by importance: high, medium, low
       const sortedQuestions = (questionsData || []).sort((a, b) => {
         const order = { high: 0, medium: 1, low: 2 };
         return order[a.importance] - order[b.importance];
       });
-      
+
       setQuestions(sortedQuestions);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [unitId]);
 
   const handleExplain = useCallback(async (question: Question, type: 'explain' | 'deep') => {
     setExplainingId(question.id);
@@ -116,7 +116,7 @@ export default function UnitQuestions() {
 
   const generateSummary = useCallback(async () => {
     if (questions.length === 0) return;
-    
+
     setIsGeneratingSummary(true);
     setSummary('');
     setSummaryDialogOpen(true);
@@ -155,7 +155,7 @@ export default function UnitQuestions() {
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-      
+
       <main className="flex-1 py-8 md:py-12">
         <div className="container">
           {subject && (
@@ -189,7 +189,7 @@ export default function UnitQuestions() {
                 <p className="text-muted-foreground mb-4">
                   {unit.description || 'Study the questions in this unit.'}
                 </p>
-                
+
                 <div className="flex flex-wrap items-center gap-4">
                   <div className="flex items-center gap-2">
                     <FileText className="h-4 w-4 text-muted-foreground" />
@@ -197,7 +197,7 @@ export default function UnitQuestions() {
                       {questions.length} Questions
                     </span>
                   </div>
-                  
+
                   <div className="flex items-center gap-2">
                     {highPriorityCount > 0 && (
                       <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20">

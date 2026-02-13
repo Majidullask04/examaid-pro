@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -28,7 +28,7 @@ export function AnalysisHistory({ sessionId, onLoadHistory }: AnalysisHistoryPro
   const [isLoading, setIsLoading] = useState(false);
   const [open, setOpen] = useState(false);
 
-  const fetchHistory = async () => {
+  const fetchHistory = useCallback(async () => {
     setIsLoading(true);
     try {
       // Fetch by user_id if logged in, otherwise by session_id
@@ -58,13 +58,13 @@ export function AnalysisHistory({ sessionId, onLoadHistory }: AnalysisHistoryPro
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user?.id, sessionId]);
 
   useEffect(() => {
     if (open) {
       fetchHistory();
     }
-  }, [open, sessionId, user?.id]);
+  }, [open, fetchHistory]);
 
   const handleDelete = async (id: string) => {
     try {
@@ -105,7 +105,7 @@ export function AnalysisHistory({ sessionId, onLoadHistory }: AnalysisHistoryPro
             View and load your previous JNTUH exam analyses
           </SheetDescription>
         </SheetHeader>
-        
+
         <ScrollArea className="h-[calc(100vh-120px)] mt-4 pr-4">
           {isLoading ? (
             <div className="flex items-center justify-center py-8 text-muted-foreground">
@@ -120,7 +120,7 @@ export function AnalysisHistory({ sessionId, onLoadHistory }: AnalysisHistoryPro
           ) : (
             <div className="space-y-3">
               {history.map((item) => (
-                <div 
+                <div
                   key={item.id}
                   className="p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors cursor-pointer group"
                   onClick={() => handleLoad(item)}

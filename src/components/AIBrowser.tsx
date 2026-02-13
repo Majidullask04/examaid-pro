@@ -52,9 +52,9 @@ export function AIBrowser({ userId }: AIBrowserProps) {
         .from('starred_items')
         .select('metadata')
         .eq('item_type', 'ai_answer');
-      
+
       if (error) throw error;
-      
+
       const ids = new Set<string>();
       data?.forEach(item => {
         const metadata = item.metadata as { messageId?: string };
@@ -106,7 +106,18 @@ export function AIBrowser({ userId }: AIBrowserProps) {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `Request failed: ${response.status}`);
+        let errorMessage = errorData.error || `Request failed: ${response.status}`;
+
+        // Handle specific error cases for better user feedback
+        if (errorMessage.includes('OpenRouter authentication failed')) {
+          errorMessage = 'Service configuration error: API Key invalid or missing. Please contact administrator.';
+        } else if (errorMessage.includes('Rate limit exceeded')) {
+          errorMessage = 'Too many requests. Please wait a moment and try again.';
+        } else if (errorMessage.includes('credits exhausted')) {
+          errorMessage = 'Service temporarily unavailable (Quota exceeded).';
+        }
+
+        throw new Error(errorMessage);
       }
 
       if (!response.body) {
@@ -143,9 +154,9 @@ export function AIBrowser({ userId }: AIBrowserProps) {
             const content = parsed.choices?.[0]?.delta?.content;
             if (content) {
               assistantContent += content;
-              setMessages(prev => 
-                prev.map(m => 
-                  m.id === assistantId 
+              setMessages(prev =>
+                prev.map(m =>
+                  m.id === assistantId
                     ? { ...m, content: assistantContent }
                     : m
                 )
@@ -173,9 +184,9 @@ export function AIBrowser({ userId }: AIBrowserProps) {
             const content = parsed.choices?.[0]?.delta?.content;
             if (content) {
               assistantContent += content;
-              setMessages(prev => 
-                prev.map(m => 
-                  m.id === assistantId 
+              setMessages(prev =>
+                prev.map(m =>
+                  m.id === assistantId
                     ? { ...m, content: assistantContent }
                     : m
                 )
@@ -187,9 +198,21 @@ export function AIBrowser({ userId }: AIBrowserProps) {
 
     } catch (error) {
       console.error('Error sending message:', error);
-      setMessages(prev => prev.filter(m => m.id !== assistantId));
+
+      // Update the assistant message to show the error
+      setMessages(prev =>
+        prev.map(m =>
+          m.id === assistantId
+            ? {
+              ...m,
+              content: `⚠️ **Error:** ${error instanceof Error ? error.message : 'Failed to get response'}. \n\nPlease try again later.`
+            }
+            : m
+        )
+      );
+
       toast({
-        title: 'Error',
+        title: 'Connection encountered an issue',
         description: error instanceof Error ? error.message : 'Failed to get AI response',
         variant: 'destructive',
       });
@@ -322,7 +345,7 @@ export function AIBrowser({ userId }: AIBrowserProps) {
                       <Bot className="h-4 w-4 text-primary" />
                     </div>
                   )}
-                  
+
                   <div
                     className={cn(
                       'max-w-[85%] rounded-lg',
@@ -344,13 +367,13 @@ export function AIBrowser({ userId }: AIBrowserProps) {
                               className="absolute top-0 right-0 h-8 w-8"
                               onClick={() => toggleStar(message)}
                             >
-                              <Star 
+                              <Star
                                 className={cn(
                                   'h-4 w-4',
-                                  starredIds.has(message.id) 
-                                    ? 'fill-yellow-400 text-yellow-400' 
+                                  starredIds.has(message.id)
+                                    ? 'fill-yellow-400 text-yellow-400'
                                     : 'text-muted-foreground'
-                                )} 
+                                )}
                               />
                             </Button>
                           </>

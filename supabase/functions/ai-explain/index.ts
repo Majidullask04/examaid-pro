@@ -11,14 +11,14 @@ const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 const openRouterHeaders = (apiKey: string) => ({
   'Authorization': `Bearer ${apiKey}`,
   'Content-Type': 'application/json',
-  'HTTP-Referer': 'https://jntuh-exam-prep.lovable.app',
+  'HTTP-Referer': 'https://examaid-pro.vercel.app',
   'X-Title': 'JNTUH Exam Prep',
 });
 
 // Stage 1: Initial research and context gathering
 async function stage1_Research(query: string, apiKey: string): Promise<string> {
   console.log("=== STAGE 1: Research & Context ===");
-  
+
   try {
     const response = await fetch(OPENROUTER_API_URL, {
       method: 'POST',
@@ -67,9 +67,9 @@ Keep it focused and exam-relevant.`
 // Stage 2: Deep analysis and concept breakdown
 async function stage2_Analysis(question: string, answer: string | null, context: string, type: string, apiKey: string): Promise<string> {
   console.log("=== STAGE 2: Deep Analysis ===");
-  
+
   let prompt = '';
-  
+
   if (type === 'explain') {
     prompt = `Analyze this question for JNTUH exam:
 
@@ -150,15 +150,15 @@ Generate:
 
 // Stage 3: Final synthesis with streaming
 async function stage3_Synthesis(
-  question: string, 
-  answer: string | null, 
-  stage1: string, 
+  question: string,
+  answer: string | null,
+  stage1: string,
   stage2: string,
-  type: string, 
+  type: string,
   apiKey: string
 ): Promise<Response> {
   console.log("=== STAGE 3: Final Synthesis (Streaming) ===");
-  
+
   const systemPrompt = `You are an elite educational AI for JNTUH R22 exam preparation.
 You must provide a clean, well-structured analysis using proper markdown formatting.
 Do NOT use special characters like asterisks for decoration. Use proper markdown headers, tables, and lists.
@@ -236,7 +236,7 @@ Based on this analysis:
 `;
 
   let userPrompt = '';
-  
+
   if (type === 'deep') {
     userPrompt = `CREATE COMPREHENSIVE EXAM ANALYSIS:
 
@@ -316,7 +316,7 @@ serve(async (req) => {
   try {
     const { question, answer, type } = await req.json();
     const OPENROUTER_API_KEY = Deno.env.get('OPENROUTER_API_KEY');
-    
+
     if (!OPENROUTER_API_KEY) {
       throw new Error("OPENROUTER_API_KEY is not configured");
     }
@@ -329,46 +329,46 @@ serve(async (req) => {
     // Stage 1: Research
     const searchQuery = type === 'summary' ? question.slice(0, 500) : question;
     const stage1 = await stage1_Research(searchQuery, OPENROUTER_API_KEY);
-    
+
     // Stage 2: Analysis
     const stage2 = await stage2_Analysis(question, answer, stage1, type, OPENROUTER_API_KEY);
 
     // Stage 3: Final Synthesis with streaming
     const response = await stage3_Synthesis(
-      question, 
-      answer, 
+      question,
+      answer,
       stage1,
       stage2,
-      type, 
+      type,
       OPENROUTER_API_KEY
     );
 
     if (!response.ok) {
       const errorText = await response.text();
       console.error('OpenRouter API error:', response.status, errorText);
-      
+
       if (response.status === 401) {
         return new Response(JSON.stringify({ error: "OpenRouter authentication failed. Please verify your API key." }), {
           status: 401,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-      
+
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }), {
           status: 429,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-      
+
       throw new Error(`OpenRouter API error: ${response.status} - ${errorText}`);
     }
 
     console.log("All stages complete. Streaming final response...");
 
     return new Response(response.body, {
-      headers: { 
-        ...corsHeaders, 
+      headers: {
+        ...corsHeaders,
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
       },

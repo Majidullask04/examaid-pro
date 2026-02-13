@@ -29,7 +29,7 @@ serve(async (req) => {
 
   try {
     const { topic, context } = await req.json();
-    
+
     if (!topic) {
       return new Response(
         JSON.stringify({ error: 'Topic is required' }),
@@ -37,9 +37,9 @@ serve(async (req) => {
       );
     }
 
-    const PERPLEXITY_API_KEY = Deno.env.get('PERPLEXITY_API_KEY');
-    if (!PERPLEXITY_API_KEY) {
-      console.error('PERPLEXITY_API_KEY is not configured');
+    const OPENROUTER_API_KEY = Deno.env.get('OPENROUTER_API_KEY');
+    if (!OPENROUTER_API_KEY) {
+      console.error('OPENROUTER_API_KEY is not configured');
       return new Response(
         JSON.stringify({ error: 'Search service not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -67,46 +67,49 @@ serve(async (req) => {
 
     console.log('Generated YouTube search URLs for:', topic);
 
-    const articleSearchPrompt = `Find the 5 best tutorial articles for learning "${topic}" for JNTUH exam preparation or engineering students.
-    Search from educational websites like: GeeksforGeeks, TutorialsPoint, JavaTPoint, Programiz, W3Schools, Medium.
+    const articleSearchPrompt = `Find 5 high-quality tutorial articles for learning "${topic}" for engineering students.
+    Recommend well-known educational sites like GeeksforGeeks, TutorialsPoint, JavaTPoint, or similar.
     For each article, provide:
     - Article title
     - Full URL
     - Website source
-    - Brief description of content
-    ${context ? `Additional context: ${context}` : ''}`;
+    - Brief description
+    ${context ? `Additional context: ${context}` : ''}
+    
+    IMPORTANT: Return ONLY valid JSON with an 'articles' array. Do not include reasoning or markdown formatting outside the JSON.`;
 
-    // Only fetch articles from Perplexity (videos are now search links)
-    const articleResponse = await fetch('https://api.perplexity.ai/chat/completions', {
+    // Only fetch articles from OpenRouter
+    const articleResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
+        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
         'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://examaid-pro.vercel.app',
+        'X-Title': 'JNTUH Exam Prep',
       },
       body: JSON.stringify({
-        model: 'sonar',
+        model: 'deepseek/deepseek-r1-0528:free',
         messages: [
-          { 
-            role: 'system', 
-            content: 'You are a helpful assistant that finds real educational resources. Always provide actual working URLs. Format your response as JSON with an articles array containing objects with title, url, source, and description fields.' 
+          {
+            role: 'system',
+            content: 'You are a helpful assistant that recommends educational resources. You must return a valid JSON object with an "articles" array containing objects with "title", "url", "source", and "description" fields. Ensure URLs are from reputable sources.'
           },
           { role: 'user', content: articleSearchPrompt }
         ],
-        search_domain_filter: ['geeksforgeeks.org', 'tutorialspoint.com', 'javatpoint.com', 'programiz.com', 'w3schools.com', 'medium.com'],
       }),
     });
 
     if (!articleResponse.ok) {
       const articleError = await articleResponse.text();
-      console.error('Perplexity API error:', articleError);
-      
+      console.error('OpenRouter API error:', articleError);
+
       if (articleResponse.status === 429) {
         return new Response(
           JSON.stringify({ error: 'Search rate limit exceeded. Please try again later.' }),
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
-      
+
       return new Response(
         JSON.stringify({ error: 'Failed to search for resources' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -141,12 +144,12 @@ serve(async (req) => {
 
     // If still no articles, parse from text content
     if (articles.length === 0 && articleContent) {
-      const urlMatches = articleContent.match(/https?:\/\/(?:www\.)?(geeksforgeeks|tutorialspoint|javatpoint|programiz|w3schools|medium)[^\s\)\]]+/g);
+      const urlMatches = articleContent.match(/https?:\/\/(?:www\.)?(geeksforgeeks|tutorialspoint|javatpoint|programiz|w3schools|medium)[^\s)\]]+/g);
       if (urlMatches) {
         articles = urlMatches.slice(0, 5).map((url: string, i: number) => ({
           title: `Article ${i + 1}`,
-          url: url.replace(/[\)\]]$/, ''),
-          source: new URL(url.replace(/[\)\]]$/, '')).hostname.replace('www.', ''),
+          url: url.replace(/[)\]]$/, ''),
+          source: new URL(url.replace(/[)\]]$/, '')).hostname.replace('www.', ''),
           description: 'Tutorial article'
         }));
       }

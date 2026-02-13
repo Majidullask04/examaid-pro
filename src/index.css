@@ -4,7 +4,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ExamHelper Dark Immersive Design System */
+/* ExamHelper Dark Immersive Design System - Refined */
 
 @layer base {
   :root {
@@ -51,10 +51,10 @@
 
     --radius: 1rem;
 
-    /* Glassmorphism Shadows */
+    /* Glassmorphism Shadows - Refined */
     --shadow-glass: 0 8px 32px hsl(222 47% 0% / 0.4);
-    --shadow-glow-blue: 0 0 20px hsl(217 91% 60% / 0.3);
-    --shadow-glow-success: 0 0 20px hsl(160 84% 39% / 0.3);
+    --shadow-glow-blue: 0 0 20px hsl(217 91% 60% / 0.2);
+    --shadow-glow-success: 0 0 20px hsl(160 84% 39% / 0.2);
 
     /* Standard Shadows */
     --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.1);
@@ -131,77 +131,80 @@
 @layer components {
   /* ============ GLASSMORPHISM NAV ============ */
   .nav-glass {
-    @apply bg-card/80 backdrop-blur-md border-b border-border/50;
+    @apply bg-background/80 backdrop-blur-md border-b border-border/50 sticky top-0 z-50;
   }
 
-  /* ============ DARK CARDS ============ */
-  .card-dark {
-    @apply bg-card rounded-2xl border border-border/30;
-    box-shadow: var(--shadow-glass);
+  /* ============ MODERN CARDS ============ */
+  .card-modern {
+    @apply bg-card/60 backdrop-blur-xl border border-white/5 rounded-2xl transition-all duration-300;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
   }
 
-  .card-dark:hover {
-    @apply border-border/50;
+  .card-modern:hover {
+    @apply border-white/10 bg-card/80;
+    box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.4);
+    transform: translateY(-2px);
   }
 
   /* ============ QUESTION CARD ============ */
   .question-card {
-    @apply bg-card/60 backdrop-blur-sm rounded-xl border border-border/30 p-4 transition-all duration-200;
+    @apply bg-card/40 backdrop-blur-sm rounded-xl border border-white/5 p-5 transition-all duration-300;
   }
 
   .question-card:hover {
-    @apply bg-card/80 border-primary/30;
+    @apply bg-card/60 border-primary/20;
     box-shadow: var(--shadow-glow-blue);
+    transform: translateY(-1px);
   }
 
   /* High probability indicator */
   .hit-badge-high {
-    background-color: hsl(160 84% 39% / 0.2);
+    background-color: hsl(160 84% 39% / 0.15);
     color: hsl(160 84% 39%);
-    border: 1px solid hsl(160 84% 39% / 0.3);
-    @apply px-2 py-0.5 rounded-full text-xs font-semibold;
+    border: 1px solid hsl(160 84% 39% / 0.2);
+    @apply px-2.5 py-0.5 rounded-full text-xs font-semibold tracking-wide uppercase;
   }
 
   .hit-badge-medium {
-    background-color: hsl(38 92% 50% / 0.2);
+    background-color: hsl(38 92% 50% / 0.15);
     color: hsl(38 92% 50%);
-    border: 1px solid hsl(38 92% 50% / 0.3);
-    @apply px-2 py-0.5 rounded-full text-xs font-semibold;
+    border: 1px solid hsl(38 92% 50% / 0.2);
+    @apply px-2.5 py-0.5 rounded-full text-xs font-semibold tracking-wide uppercase;
   }
 
   .hit-badge-low {
-    @apply bg-muted text-muted-foreground border border-border px-2 py-0.5 rounded-full text-xs font-semibold;
+    @apply bg-muted/50 text-muted-foreground border border-border/50 px-2.5 py-0.5 rounded-full text-xs font-semibold tracking-wide uppercase;
   }
 
   /* ============ PILL BUTTONS ============ */
   .pill-youtube {
-    @apply inline-flex items-center gap-2 px-5 py-2.5 bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded-full font-medium transition-all duration-200;
-    @apply active:scale-95 hover:brightness-110;
-    min-height: 48px;
+    @apply inline-flex items-center gap-2 px-6 py-2.5 bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded-full font-medium transition-all duration-200 shadow-lg shadow-destructive/20;
+    @apply active:scale-95 hover:shadow-xl hover:shadow-destructive/30;
+    min-height: 44px;
   }
 
   .pill-article {
-    @apply inline-flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full font-medium transition-all duration-200;
-    @apply active:scale-95 hover:brightness-110;
-    min-height: 48px;
+    @apply inline-flex items-center gap-2 px-6 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full font-medium transition-all duration-200 shadow-lg shadow-primary/20;
+    @apply active:scale-95 hover:shadow-xl hover:shadow-primary/30;
+    min-height: 44px;
   }
 
   /* ============ STATS BOT CARD ============ */
   .stats-card {
-    @apply bg-card/90 backdrop-blur-md rounded-2xl border border-border/40 p-4;
+    @apply bg-card/80 backdrop-blur-xl rounded-2xl border border-white/10 p-5;
     box-shadow: var(--shadow-glass);
   }
 
   .stats-card-warning {
-    border-color: hsl(38 92% 50% / 0.5);
-    box-shadow: 0 0 20px hsl(38 92% 50% / 0.2);
+    border-color: hsl(38 92% 50% / 0.3);
+    box-shadow: 0 0 20px hsl(38 92% 50% / 0.1);
   }
 
   /* ============ INPUT STYLES ============ */
   .input-dark {
-    @apply bg-secondary/50 border border-border/50 rounded-2xl text-foreground placeholder:text-muted-foreground;
-    @apply focus:border-primary/50 focus:ring-2 focus:ring-primary/20 focus:outline-none;
-    @apply text-base; /* Prevents zoom on mobile */
+    @apply bg-secondary/30 border border-white/10 rounded-xl text-foreground placeholder:text-muted-foreground/50 backdrop-blur-sm transition-all duration-200;
+    @apply focus:border-primary/50 focus:bg-secondary/50 focus:ring-4 focus:ring-primary/10 focus:outline-none;
+    @apply text-base py-3 px-4; /* Prevents zoom on mobile */
   }
 
   .input-dark-pulse {
@@ -222,25 +225,27 @@
   /* ============ GRID BACKGROUND ============ */
   .grid-bg {
     background-image: 
-      linear-gradient(to right, hsl(222 30% 15% / 0.3) 1px, transparent 1px),
-      linear-gradient(to bottom, hsl(222 30% 15% / 0.3) 1px, transparent 1px);
-    background-size: 60px 60px;
+      radial-gradient(circle at center, hsl(217 91% 60% / 0.03) 0, transparent 0),
+      linear-gradient(to right, hsl(222 30% 15% / 0.1) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(222 30% 15% / 0.1) 1px, transparent 1px);
+    background-size: 100% 100%, 40px 40px, 40px 40px;
+    background-position: center, center, center;
   }
 
   /* ============ BLUR-IN ANIMATION ============ */
   .blur-in {
-    animation: blur-in 0.5s ease-out forwards;
+    animation: blur-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
 
   @keyframes blur-in {
     0% {
       opacity: 0;
-      transform: translateY(20px);
-      filter: blur(8px);
+      transform: translateY(20px) scale(0.95);
+      filter: blur(10px);
     }
     100% {
       opacity: 1;
-      transform: translateY(0);
+      transform: translateY(0) scale(1);
       filter: blur(0);
     }
   }
@@ -252,7 +257,7 @@
 
   /* ============ SUCCESS FLASH ============ */
   .flash-success {
-    animation: flash-green 0.4s ease-out;
+    animation: flash-green 0.5s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   @keyframes flash-green {
@@ -261,54 +266,50 @@
     }
     50% {
       border-color: hsl(var(--success));
-      box-shadow: 0 0 20px hsl(160 84% 39% / 0.4);
+      box-shadow: 0 0 30px hsl(160 84% 39% / 0.3);
     }
   }
 
   /* ============ COLLAPSIBLE STRATEGY ============ */
   .strategy-header {
-    @apply flex items-center justify-between p-3 bg-primary/10 border border-primary/20 rounded-xl cursor-pointer;
-    @apply hover:bg-primary/15 transition-colors;
+    @apply flex items-center justify-between p-4 bg-primary/5 border border-primary/10 rounded-xl cursor-pointer;
+    @apply hover:bg-primary/10 transition-all duration-200;
   }
 
   /* ============ UNIT HEADER ============ */
   .unit-header {
-    @apply text-lg font-semibold text-foreground py-3 border-b border-border/30 mb-3;
+    @apply text-xl font-bold text-foreground py-4 border-b border-border/30 mb-6 flex items-center gap-3;
   }
 
-  /* ============ LEGACY NEUMORPHIC (kept for backwards compat) ============ */
+  /* ============ MODERN GLASS (Replaces Neumorphic) ============ */
+  .glass-panel {
+    @apply bg-card/30 backdrop-blur-xl rounded-2xl border border-white/5;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  }
+
+  .interactive-panel {
+    @apply glass-panel transition-all duration-300;
+  }
+  
+  .interactive-panel:hover {
+    @apply bg-card/40 border-white/10;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  }
+  
+  /* Fallback for legacy class used in code */
   .neumorphic {
-    @apply bg-card rounded-[20px] border border-border/20;
-    box-shadow: var(--shadow-lg);
+    @apply interactive-panel; 
   }
 
-  .btn-neumorphic {
-    @apply bg-card text-foreground font-semibold px-6 py-4 rounded-2xl transition-all duration-200;
-    box-shadow: var(--shadow-md);
+  .btn-primary-glow {
+    @apply bg-primary text-primary-foreground font-semibold px-8 py-3 rounded-full transition-all duration-300 shadow-lg shadow-primary/25;
+    @apply hover:brightness-110 hover:shadow-primary/40 hover:scale-105 active:scale-95;
   }
 
-  .btn-neumorphic:hover {
-    box-shadow: var(--shadow-lg);
-  }
-
-  .btn-neumorphic:active {
-    @apply scale-95;
-  }
-
-  .btn-neumorphic-primary {
-    @apply bg-primary text-primary-foreground font-semibold px-6 py-4 rounded-2xl transition-all duration-200;
-  }
-
-  .btn-neumorphic-primary:hover {
-    @apply brightness-110;
-  }
-
-  .btn-neumorphic-primary:active {
-    @apply scale-95;
-  }
-
-  .btn-success {
-    @apply bg-success text-success-foreground font-semibold px-6 py-4 rounded-2xl transition-all duration-200;
+  .btn-glass {
+    @apply bg-secondary/50 text-foreground font-semibold px-6 py-3 rounded-xl transition-all duration-200 border border-white/5 backdrop-blur-sm;
+    @apply hover:bg-secondary/70 hover:border-white/10 hover:shadow-lg active:scale-95;
   }
 
   /* ============ THINKING ANIMATION ============ */
@@ -326,21 +327,28 @@
 
   /* ============ GLOW EFFECTS ============ */
   .glow-primary {
-    animation: glow-pulse 2s ease-in-out infinite;
+    position: relative;
+  }
+  
+  .glow-primary::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    background: inherit;
+    filter: blur(10px);
+    opacity: 0.5;
+    z-index: -1;
+    animation: glow-pulse 3s ease-in-out infinite;
   }
 
   @keyframes glow-pulse {
-    0%, 100% {
-      box-shadow: 0 0 5px hsl(217 91% 60% / 0.3);
-    }
-    50% {
-      box-shadow: 0 0 20px hsl(217 91% 60% / 0.5);
-    }
+    0%, 100% { opacity: 0.4; transform: scale(1); }
+    50% { opacity: 0.7; transform: scale(1.02); }
   }
 
   /* ============ PANIC MODE ============ */
   .panic-mode {
-    @apply border-2 border-destructive;
+    @apply border-2 border-destructive bg-destructive/5;
     animation: panic-pulse 1s ease-in-out infinite;
   }
 
@@ -349,7 +357,7 @@
       box-shadow: 0 0 0 0 hsl(0 72% 51% / 0.4);
     }
     50% {
-      box-shadow: 0 0 0 8px hsl(0 72% 51% / 0);
+      box-shadow: 0 0 0 10px hsl(0 72% 51% / 0);
     }
   }
 
@@ -370,16 +378,23 @@
   .scroll-area-dark::-webkit-scrollbar-thumb {
     background: hsl(222 30% 25%);
     border-radius: 3px;
+    transition: background 0.2s;
+  }
+  
+  .scroll-area-dark::-webkit-scrollbar-thumb:hover {
+    background: hsl(222 30% 35%);
   }
 
   /* ============ FADE TRANSITION ============ */
   .fade-enter {
     opacity: 0;
+    transform: translateY(10px);
   }
 
   .fade-enter-active {
     opacity: 1;
-    transition: opacity 300ms ease-out;
+    transform: translateY(0);
+    transition: all 400ms cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .fade-exit {
