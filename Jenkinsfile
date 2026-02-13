@@ -7,11 +7,12 @@ pipeline {
         AWS_IP = '51.20.130.110'
     }
 
-    stage('Build Docker Image') {
+    stages {
+        stage('Build Docker Image') {
             steps {
                 script {
                     echo 'Building Docker Image for Linux...'
-                    // This flag forces it to be compatible with your AWS server
+                    // This flag ensures compatibility with AWS EC2
                     sh "docker build --platform linux/amd64 -t $DOCKER_IMAGE:latest ."
                 }
             }
@@ -31,20 +32,14 @@ pipeline {
 
         stage('Deploy to AWS') {
             steps {
-                // This step uses the key you just saved to log into AWS
                 sshagent(['ec2-server-key']) {
                     script {
-                        echo "Deploying to AWS..."
+                        echo "Deploying to AWS at $AWS_IP..."
                         def remote = "ubuntu@$AWS_IP"
                         
-                        // 1. Pull the new image on the AWS server
                         sh "ssh -o StrictHostKeyChecking=no ${remote} 'docker pull $DOCKER_IMAGE:latest'"
-                        
-                        // 2. Stop and remove the old container (if running)
                         sh "ssh -o StrictHostKeyChecking=no ${remote} 'docker stop examaid-app || true'"
                         sh "ssh -o StrictHostKeyChecking=no ${remote} 'docker rm examaid-app || true'"
-                        
-                        // 3. Start the new container
                         sh "ssh -o StrictHostKeyChecking=no ${remote} 'docker run -d -p 3000:3000 --name examaid-app $DOCKER_IMAGE:latest'"
                     }
                 }
@@ -55,10 +50,9 @@ pipeline {
             steps {
                 script {
                     echo "Checking AWS Health..."
-                    sleep 10
+                    sleep 15
                     sshagent(['ec2-server-key']) {
                          def remote = "ubuntu@$AWS_IP"
-                         // Check if the app is listed in the running processes
                          sh "ssh -o StrictHostKeyChecking=no ${remote} 'docker ps | grep examaid-app'"
                     }
                 }
