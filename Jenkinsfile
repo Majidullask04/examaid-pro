@@ -2,7 +2,7 @@ pipeline {
     agent any
     
     environment {
-        DOCKER_IMAGE = 'majidullask04/examaid-pro' 
+        DOCKER_IMAGE = 'majid04/examaid-pro' 
         REGISTRY_CRED = 'docker-hub-credentials'
     }
 
