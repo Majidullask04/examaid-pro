@@ -276,8 +276,8 @@ export function AIBrowser({ userId }: AIBrowserProps) {
     } catch (error) {
       console.error('Error toggling star:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to update starred items',
+        title: 'Error saving item',
+        description: error instanceof Error ? error.message : `Failed: ${JSON.stringify(error)}`,
         variant: 'destructive',
       });
     }

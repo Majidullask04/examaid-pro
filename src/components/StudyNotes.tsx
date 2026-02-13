@@ -37,14 +37,7 @@ export function StudyNotes({ userId }: StudyNotesProps) {
   const [activeTab, setActiveTab] = useState('notes');
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (userId) {
-      fetchNotes();
-      fetchStarredItems();
-    } else {
-      setIsLoading(false);
-    }
-  }, [userId, fetchNotes, fetchStarredItems]);
+
 
   const fetchNotes = useCallback(async () => {
     try {
@@ -93,8 +86,43 @@ export function StudyNotes({ userId }: StudyNotesProps) {
       setStarredItems((data || []) as StarredItem[]);
     } catch (error) {
       console.error('Error fetching starred items:', error);
+      toast({
+        title: 'Error loading starred items',
+        description: error instanceof Error ? error.message : 'Unknown error',
+        variant: 'destructive',
+      });
     }
   }, []);
+
+  useEffect(() => {
+    if (userId) {
+      fetchNotes();
+      fetchStarredItems();
+
+      // Subscribe to changes in starred_items
+      const channel = supabase
+        .channel('schema-db-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'starred_items',
+            filter: `user_id=eq.${userId}`,
+          },
+          () => {
+            fetchStarredItems();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    } else {
+      setIsLoading(false);
+    }
+  }, [userId, fetchNotes, fetchStarredItems]);
 
   const createNote = async () => {
     if (!userId || !newNote.title.trim()) return;
@@ -359,7 +387,7 @@ export function StudyNotes({ userId }: StudyNotesProps) {
                       </div>
                       {note.content && (
                         <p className="text-sm text-muted-foreground whitespace-pre-line">
-                          {note.content}
+                          {typeof note.content === 'string' ? note.content : JSON.stringify(note.content)}
                         </p>
                       )}
                       {note.resources && note.resources.length > 0 && (

@@ -8,6 +8,7 @@ interface MarkdownRendererProps {
 export function MarkdownRenderer({ content, className }: MarkdownRendererProps) {
   // Parse and render markdown content
   const renderMarkdown = (text: string) => {
+    if (!text || typeof text !== 'string') return null;
     const lines = text.split('\n');
     const elements: JSX.Element[] = [];
     let inTable = false;

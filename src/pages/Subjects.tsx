@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
+import { ErrorBoundary } from '@/components/ui/error-boundary';
 
 interface ResourceItem {
   title: string;
@@ -42,18 +43,29 @@ export default function Subjects() {
   const { toast } = useToast();
 
   useEffect(() => {
+    // Initial check
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUserId(user?.id || null);
+      setIsLoading(false);
+    };
     checkAuth();
+
+    // Subscribe to auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUserId(session?.user?.id || null);
+      setIsLoading(false);
+    });
+
     const tabParam = searchParams.get('tab');
     if (tabParam) {
       setActiveTab(tabParam);
     }
-  }, [searchParams]);
 
-  const checkAuth = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    setUserId(user?.id || null);
-    setIsLoading(false);
-  };
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [searchParams]);
 
   const searchResources = async () => {
     if (!resourceQuery.trim()) return;
@@ -258,7 +270,9 @@ export default function Subjects() {
 
             {/* Study Notes Tab */}
             <TabsContent value="notes" className="fade-enter-active">
-              <StudyNotes userId={userId} />
+              <ErrorBoundary>
+                <StudyNotes userId={userId} />
+              </ErrorBoundary>
             </TabsContent>
           </Tabs>
         </div>
