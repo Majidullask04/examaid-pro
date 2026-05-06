@@ -92,7 +92,7 @@ export function StudyNotes({ userId }: StudyNotesProps) {
         variant: 'destructive',
       });
     }
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
     if (userId) {

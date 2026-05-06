@@ -1,18 +1,24 @@
-# Use a light version of Node.js
-FROM node:18-alpine
+FROM node:18-alpine AS frontend-builder
 
-# Set the working directory inside the container
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+FROM python:3.12-slim AS runtime
+
 WORKDIR /app
 
-# Copy package files and install dependencies
-COPY package*.json ./
-RUN npm install
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
 
-# Copy the rest of your app code
-COPY . .
+COPY backend/requirements.txt /app/backend/requirements.txt
+RUN pip install --no-cache-dir -r /app/backend/requirements.txt
 
-# expose the port your app runs on (usually 3000 or 8080)
+COPY backend /app/backend
+COPY --from=frontend-builder /app/dist /app/dist
+
 EXPOSE 3000
 
-# The command to start your app
-CMD ["npm", "start"]
+CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "3000"]

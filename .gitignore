@@ -25,3 +25,13 @@ dist-ssr
 
 # Supabase
 supabase/.temp/
+
+# Local environment and generated runtime files
+.env
+.env.*
+!.env.example
+__pycache__/
+*.py[cod]
+*.db
+backend/credentials.json
+.superset/

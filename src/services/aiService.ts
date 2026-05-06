@@ -1,4 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
+import { apiUrl } from '@/lib/api';
 
 type ExplanationType = 'explain' | 'deep' | 'summary';
 
@@ -6,6 +6,35 @@ interface StreamCallbacks {
   onDelta: (text: string) => void;
   onDone: () => void;
   onError: (error: string) => void;
+}
+
+interface StructuredAnswer {
+  title?: string;
+  definition?: string;
+  important_points?: string[];
+  exam_answer?: string;
+}
+
+function answerToMarkdown(answer: StructuredAnswer) {
+  const sections: string[] = [];
+
+  if (answer.title) {
+    sections.push(`### ${answer.title}`);
+  }
+
+  if (answer.definition) {
+    sections.push(`**Definition:** ${answer.definition}`);
+  }
+
+  if (answer.important_points?.length) {
+    sections.push(`**Important Points:**\n${answer.important_points.map((point) => `- ${point}`).join('\n')}`);
+  }
+
+  if (answer.exam_answer) {
+    sections.push(`**Exam Answer:**\n${answer.exam_answer}`);
+  }
+
+  return sections.join('\n\n');
 }
 
 export async function streamAIExplanation(
@@ -17,88 +46,28 @@ export async function streamAIExplanation(
   const { onDelta, onDone, onError } = callbacks;
 
   try {
-    const response = await fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-explain`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({ question, answer, type }),
-      }
-    );
+    const response = await fetch(apiUrl('/api/ai/answer'), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        question,
+        context: answer,
+        mode: type,
+      }),
+    });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-      onError(errorData.error || `Error: ${response.status}`);
+      onError('Temporary AI issue. Please retry.');
       return;
     }
 
-    if (!response.body) {
-      onError('No response body');
-      return;
-    }
-
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let textBuffer = '';
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      textBuffer += decoder.decode(value, { stream: true });
-
-      let newlineIndex: number;
-      while ((newlineIndex = textBuffer.indexOf('\n')) !== -1) {
-        let line = textBuffer.slice(0, newlineIndex);
-        textBuffer = textBuffer.slice(newlineIndex + 1);
-
-        if (line.endsWith('\r')) line = line.slice(0, -1);
-        if (line.startsWith(':') || line.trim() === '') continue;
-        if (!line.startsWith('data: ')) continue;
-
-        const jsonStr = line.slice(6).trim();
-        if (jsonStr === '[DONE]') {
-          onDone();
-          return;
-        }
-
-        try {
-          const parsed = JSON.parse(jsonStr);
-          const content = parsed.choices?.[0]?.delta?.content;
-          if (content) onDelta(content);
-        } catch {
-          // Re-buffer incomplete JSON
-          textBuffer = line + '\n' + textBuffer;
-          break;
-        }
-      }
-    }
-
-    // Final flush
-    if (textBuffer.trim()) {
-      for (let raw of textBuffer.split('\n')) {
-        if (!raw) continue;
-        if (raw.endsWith('\r')) raw = raw.slice(0, -1);
-        if (raw.startsWith(':') || raw.trim() === '') continue;
-        if (!raw.startsWith('data: ')) continue;
-        const jsonStr = raw.slice(6).trim();
-        if (jsonStr === '[DONE]') continue;
-        try {
-          const parsed = JSON.parse(jsonStr);
-          const content = parsed.choices?.[0]?.delta?.content;
-          if (content) onDelta(content);
-        } catch {
-          /* ignore */
-        }
-      }
-    }
-
+    const data = await response.json() as StructuredAnswer;
+    onDelta(answerToMarkdown(data));
     onDone();
   } catch (error) {
     console.error('AI Service Error:', error);
-    onError(error instanceof Error ? error.message : 'Failed to get AI explanation');
+    onError('Temporary AI issue. Please retry.');
   }
 }

@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+httpx
+pydantic
+python-dotenv
+redis
+fpdf2
+sqlalchemy
+trafilatura
+ddgs

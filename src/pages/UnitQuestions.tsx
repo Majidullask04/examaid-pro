@@ -32,12 +32,6 @@ export default function UnitQuestions() {
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (unitId) {
-      fetchUnitAndQuestions();
-    }
-  }, [unitId, fetchUnitAndQuestions]);
-
   const fetchUnitAndQuestions = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -83,6 +77,12 @@ export default function UnitQuestions() {
       setIsLoading(false);
     }
   }, [unitId]);
+
+  useEffect(() => {
+    if (unitId) {
+      fetchUnitAndQuestions();
+    }
+  }, [unitId, fetchUnitAndQuestions]);
 
   const handleExplain = useCallback(async (question: Question, type: 'explain' | 'deep') => {
     setExplainingId(question.id);
@@ -153,13 +153,13 @@ export default function UnitQuestions() {
   const lowPriorityCount = questions.filter((q) => q.importance === 'low').length;
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-slate-950">
       <Header />
 
       <main className="flex-1 py-8 md:py-12">
         <div className="container">
           {subject && (
-            <Button variant="ghost" size="sm" asChild className="mb-6 -ml-2">
+            <Button variant="ghost" size="sm" asChild className="mb-6 -ml-2 text-white hover:text-slate-200">
               <Link to={`/subjects/${subject.id}`} className="gap-2">
                 <ArrowLeft className="h-4 w-4" />
                 Back to {subject.name}
@@ -169,11 +169,11 @@ export default function UnitQuestions() {
 
           {isLoading ? (
             <>
-              <Skeleton className="h-10 w-64 mb-2" />
-              <Skeleton className="h-6 w-96 mb-8" />
+              <Skeleton className="h-10 w-64 mb-2 bg-slate-800" />
+              <Skeleton className="h-6 w-96 mb-8 bg-slate-800" />
               <div className="space-y-4">
                 {[...Array(3)].map((_, i) => (
-                  <Skeleton key={i} className="h-48 rounded-xl" />
+                  <Skeleton key={i} className="h-48 rounded-xl bg-slate-800" />
                 ))}
               </div>
             </>
@@ -181,36 +181,36 @@ export default function UnitQuestions() {
             <>
               <div className="mb-8">
                 <div className="flex items-center gap-3 mb-2">
-                  <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary font-bold text-lg">
+                  <div className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-500/20 text-blue-400 font-bold text-lg border border-blue-500/30">
                     {unit.unit_number}
                   </div>
-                  <h1 className="text-3xl md:text-4xl font-bold">{unit.title}</h1>
+                  <h1 className="text-3xl md:text-4xl font-bold text-white">{unit.title}</h1>
                 </div>
-                <p className="text-muted-foreground mb-4">
+                <p className="text-slate-400 mb-4">
                   {unit.description || 'Study the questions in this unit.'}
                 </p>
 
                 <div className="flex flex-wrap items-center gap-4">
                   <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">
+                    <FileText className="h-4 w-4 text-slate-400" />
+                    <span className="text-sm text-slate-400">
                       {questions.length} Questions
                     </span>
                   </div>
 
                   <div className="flex items-center gap-2">
                     {highPriorityCount > 0 && (
-                      <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20">
+                      <Badge variant="outline" className="bg-red-500/20 text-red-400 border-red-500/30">
                         {highPriorityCount} High
                       </Badge>
                     )}
                     {mediumPriorityCount > 0 && (
-                      <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+                      <Badge variant="outline" className="bg-blue-500/20 text-blue-400 border-blue-500/30">
                         {mediumPriorityCount} Medium
                       </Badge>
                     )}
                     {lowPriorityCount > 0 && (
-                      <Badge variant="outline">
+                      <Badge variant="outline" className="bg-slate-700 text-slate-300 border-slate-600">
                         {lowPriorityCount} Low
                       </Badge>
                     )}
@@ -222,7 +222,7 @@ export default function UnitQuestions() {
                       size="sm"
                       onClick={generateSummary}
                       disabled={isGeneratingSummary}
-                      className="gap-2"
+                      className="gap-2 bg-slate-800 text-white border-slate-700 hover:bg-slate-700"
                     >
                       {isGeneratingSummary ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -249,9 +249,9 @@ export default function UnitQuestions() {
                 </div>
               ) : (
                 <div className="text-center py-12">
-                  <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">No questions available</h3>
-                  <p className="text-muted-foreground">
+                  <FileText className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2 text-white">No questions available</h3>
+                  <p className="text-slate-400">
                     Questions for this unit haven't been added yet.
                   </p>
                 </div>
@@ -259,11 +259,11 @@ export default function UnitQuestions() {
             </>
           ) : (
             <div className="text-center py-12">
-              <h3 className="text-lg font-semibold mb-2">Unit not found</h3>
-              <p className="text-muted-foreground mb-4">
+              <h3 className="text-lg font-semibold mb-2 text-white">Unit not found</h3>
+              <p className="text-slate-400 mb-4">
                 The unit you're looking for doesn't exist.
               </p>
-              <Button asChild>
+              <Button asChild className="bg-slate-700 text-white hover:bg-slate-600 border-slate-600">
                 <Link to="/subjects">Browse Subjects</Link>
               </Button>
             </div>
