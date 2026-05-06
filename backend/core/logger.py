@@ -3,10 +3,25 @@ import time
 import re
 from functools import wraps
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-)
+class SanitizeFormatter(logging.Formatter):
+    """Sanitize log messages to prevent log injection attacks."""
+    def format(self, record):
+        # Format the message first
+        message = super().format(record)
+        # Replace newlines, carriage returns, and null bytes with safe characters
+        return re.sub(r'[\r\n\x00\x1b]', ' ', message).strip()
+
+# Configure root logger manually instead of using basicConfig to ensure
+# all logs use the sanitizing formatter
+_handler = logging.StreamHandler()
+_handler.setFormatter(SanitizeFormatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s"))
+
+_root_logger = logging.getLogger()
+_root_logger.setLevel(logging.INFO)
+# Remove existing handlers to avoid duplicates if this module is reloaded
+if _root_logger.hasHandlers():
+    _root_logger.handlers.clear()
+_root_logger.addHandler(_handler)
 
 logger = logging.getLogger("backend")
 
