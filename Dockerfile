@@ -3,7 +3,12 @@ FROM node:18-alpine AS frontend-builder
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
-COPY . .
+# Copy frontend configuration files
+COPY index.html vite.config.ts tsconfig*.json tailwind.config.ts postcss.config.js eslint.config.js components.json ./
+
+# Copy source directories
+COPY src/ ./src/
+COPY public/ ./public/
 RUN npm run build
 
 FROM python:3.12-slim AS runtime
