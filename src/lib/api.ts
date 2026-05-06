@@ -6,7 +6,7 @@ const isLocalHost = () => {
   return ['localhost', '127.0.0.1'].includes(window.location.hostname);
 };
 
-const defaultApiBase = isLocalHost() ? 'http://localhost:8000' : '';
+const defaultApiBase = isLocalHost() ? 'http://localhost:8000' : 'https://examaid-pro.onrender.com';
 
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || defaultApiBase;
 
