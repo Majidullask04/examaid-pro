@@ -6,7 +6,7 @@ import json
 import time
 import hashlib
 from typing import Optional
-from core.logger import logger
+from core.logger import logger, _sanitize_log_message
 
 
 class CacheManager:
@@ -95,10 +95,11 @@ class CacheManager:
     def get_study_plan(self, subject_code: str, goal: str) -> Optional[dict]:
         key = self._make_key("study_plan", subject_code=subject_code, goal=goal)
         result = self.get(key)
+        safe_key = _sanitize_log_message(key)
         if result:
-            logger.info(f"CACHE HIT: {key}")
+            logger.info("CACHE HIT: %s", safe_key)
         else:
-            logger.info(f"CACHE MISS: {key}")
+            logger.info("CACHE MISS: %s", safe_key)
         return result
 
     def set_study_plan(self, subject_code: str, goal: str, data: dict):
@@ -107,18 +108,21 @@ class CacheManager:
 
     def invalidate_study_plan(self, subject_code: str):
         """Called when new questions are added. Invalidates both pass and high caches."""
+        safe_subject = _sanitize_log_message(subject_code)
         for goal in ["pass", "high_marks"]:
             key = self._make_key("study_plan", subject_code=subject_code, goal=goal)
             self.delete(key)
-        logger.info(f"Invalidated study plan cache for {subject_code}")
+        logger.info("Invalidated study plan cache for %s", safe_subject)
 
     def get_explanation(self, subject_code: str, topic: str) -> Optional[dict]:
-        topic_hash = hashlib.md5(topic.encode()).hexdigest()[:12]
+        # Use SHA-256 instead of MD5 for secure hashing
+        topic_hash = hashlib.sha256(topic.encode()).hexdigest()[:12]
         key = self._make_key("explain", subject_code=subject_code, topic_hash=topic_hash)
         return self.get(key)
 
     def set_explanation(self, subject_code: str, topic: str, data: dict):
-        topic_hash = hashlib.md5(topic.encode()).hexdigest()[:12]
+        # Use SHA-256 instead of MD5 for secure hashing
+        topic_hash = hashlib.sha256(topic.encode()).hexdigest()[:12]
         key = self._make_key("explain", subject_code=subject_code, topic_hash=topic_hash)
         self.set(key, data, self.TTL_SECONDS["explain"])
 
