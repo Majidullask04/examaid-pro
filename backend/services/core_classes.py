@@ -1,5 +1,7 @@
+import os
+import tempfile
 from fpdf import FPDF
-from core.logger import logger
+from core.logger import logger, _sanitize_log_message
 from schemas import FormattedAnswer
 from services.ocr_service import perform_ocr
 
@@ -18,7 +20,8 @@ class AIOrchestrator:
         from services.ai_pipeline import qwen_analysis, zlm_generate, format_answer, QWEN_MODEL
         import asyncio
         
-        logger.info(f"AI Orchestrator initiating plan for goal: {goal}")
+        safe_goal = _sanitize_log_message(goal)
+        logger.info("AI Orchestrator initiating plan for goal: %s", safe_goal)
         
         # 1. Analyze
         analysis = await qwen_analysis(syllabus_text)
@@ -47,7 +50,8 @@ class PDFGenerator:
     """Converts AI JSON output into a styled PDF for mobile."""
     
     def create_exam_guide(self, data: FormattedAnswer, template_name: str = "mobile_default") -> str:
-        logger.info(f"PDFGenerator generating {template_name} guide...")
+        safe_template = _sanitize_log_message(template_name)
+        logger.info("PDFGenerator generating %s guide...", safe_template)
         pdf = FPDF()
         pdf.add_page()
         pdf.set_auto_page_break(auto=True, margin=15)
@@ -75,10 +79,22 @@ class PDFGenerator:
         add_section("Diagram / Visualization", data.diagram)
         add_section("Conclusion", data.conclusion)
         
-        # Save to file or return string path
-        output_path = "/tmp/generated_guide.pdf"
-        pdf.output(output_path)
-        return output_path
+        # Save to secure temp directory instead of publicly writable /tmp/
+        # Use application's tmp directory or system temp with proper permissions
+        secure_tmp_dir = os.path.join(os.getcwd(), "tmp")
+        os.makedirs(secure_tmp_dir, exist_ok=True)
+        
+        # Create temp file securely with proper permissions
+        fd, output_path = tempfile.mkstemp(suffix=".pdf", dir=secure_tmp_dir)
+        try:
+            os.close(fd)  # Close file descriptor
+            pdf.output(output_path)
+            return output_path
+        except Exception:
+            # Clean up on error
+            if os.path.exists(output_path):
+                os.unlink(output_path)
+            raise
 
 class JNTUHDataManager:
     """Manages the subject lists and R22 branch data."""
@@ -104,5 +120,6 @@ class JNTUHDataManager:
         }
     
     def get_subjects_by_branch(self, branch: str = "CSE"):
-        logger.info(f"JNTUHDataManager fetching subjects for {branch}")
+        safe_branch = _sanitize_log_message(branch)
+        logger.info("JNTUHDataManager fetching subjects for %s", safe_branch)
         return self.r22_data.get(branch.upper(), [])
