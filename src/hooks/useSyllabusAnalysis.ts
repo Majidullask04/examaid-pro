@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { apiUrl } from '@/lib/api';
 
 interface AnalysisResult {
     fullText: string;
@@ -86,119 +87,35 @@ export const useSyllabusAnalysis = ({
         setPipelineStage('vision'); // Start at vision
 
         try {
-            const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analyze-syllabus`, {
+            const response = await fetch(apiUrl('/api/syllabus/analyze'), {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
                     'Content-Type': 'application/json',
-                    'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-                    'x-session-id': sessionId,
                 },
                 body: JSON.stringify({
-                    imageBase64,
+                    image_base64: imageBase64,
                     department: selectedDepartment.fullName,
-                    studyGoal: goal,
-                    panicMode,
+                    goal,
+                    panic_mode: panicMode,
                 }),
             });
 
             if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                const errorMessage = errorData.error || `API error: ${response.status}`;
-
-                if (errorMessage.includes('API keys not configured')) {
-                    throw new Error(errorMessage);
-                } else if (errorMessage.includes('Image is required')) {
-                    throw new Error('Please upload a valid image file.');
-                } else if (errorMessage.includes('Vision API error')) {
-                    throw new Error('AI Vision failed to read the image. Please try a clearer photo.');
-                }
-
-                throw new Error(errorMessage);
+                throw new Error('API failed to analyze syllabus');
             }
 
-            // We have a response, meaning Vision (server-side) and Search (server-side) are mostly done or acting.
-            // But we'll wait for the stream events to confirm. 
-            // Actually, since the server handles Qwen/Perplexity BEFORE returning response, 
-            // we can assume we are transitioning to Fusion/Brain once we get headers, 
-            // but let's rely on the stream events for precision.
-
-            const reader = response.body?.getReader();
-            if (!reader) throw new Error('No response body');
-
-            const decoder = new TextDecoder();
-            let fullText = '';
-            let buffer = '';
-
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-
-                buffer += decoder.decode(value, { stream: true });
-                const lines = buffer.split('\n');
-                buffer = lines.pop() || '';
-
-                for (const line of lines) {
-                    if (line.startsWith('data: ')) {
-                        const data = line.slice(6).trim();
-                        if (data === '[DONE]') continue;
-
-                        try {
-                            const parsed = JSON.parse(data);
-
-                            // Handle new Pipeline Events
-                            if (parsed.type === 'pipeline_event') {
-                                const { stage: pStage, status } = parsed;
-                                // Map backend stages to frontend pipeline stages
-                                if (pStage === 'vision' && status === 'complete') setPipelineStage('search');
-                                else if (pStage === 'search' && status === 'complete') setPipelineStage('fusion');
-                                else if (pStage === 'fusion') setPipelineStage('fusion');
-                                else if (pStage === 'brain') setPipelineStage('brain');
-
-                                // Update text description
-                                setStage(parsed.details || `Entering ${pStage} phase...`);
-                                continue;
-                            }
-
-                            // Fallback for legacy/content events
-                            if (parsed.stage === 'web_search_complete') {
-                                setPipelineStage('fusion');
-                                setStage('Stage 2: Searching JNTUH papers (2019-2024)...');
-                            } else if (parsed.stage === 'analysis' && parsed.content) {
-                                setPipelineStage('brain');
-                                fullText += parsed.content;
-                                // Live update optional, here we just accumulate
-                                // If we want live updates, we need to pass a callback
-
-                                if (fullText.includes('METHODOLOGY')) {
-                                    setStage('Stage 3: Building methodology & hit ratios...');
-                                }
-                                if (fullText.includes('YEAR-WISE HIT RATIO') || fullText.includes('Hit Ratio')) {
-                                    setStage('Stage 4: Generating high probability questions...');
-                                }
-                                if (fullText.includes('HIGH PROBABILITY QUESTIONS')) {
-                                    setStage('Stage 4: Generating high probability questions...');
-                                }
-                                if (fullText.includes('SUGGESTED APPROACH') || fullText.includes('Phase 1:')) {
-                                    setStage('Stage 5: Creating study approach...');
-                                }
-                            }
-                        } catch {
-                            // Skip invalid JSON
-                        }
-                    }
-                }
-            }
+            const data = await response.json();
+            const fullText = data.analysis || '';
+            const backendSubjectHint = data.subject_hint || '';
 
             if (fullText.trim()) {
-                setPipelineStage('presentation'); // Final stage
-                const subject = extractSubjectFromResult(fullText);
+                setPipelineStage('presentation');
+                const subject = backendSubjectHint || extractSubjectFromResult(fullText);
                 onSuccess(fullText, subject || undefined);
                 toast.success('Analysis complete!');
             } else {
-                console.error('Stream ended but fullText is empty. Buffer:', buffer);
                 toast.error('Analysis produced no results. Please try again.');
-                setPipelineStage('vision'); // Reset
+                setPipelineStage('vision');
             }
 
             setStage('');
@@ -228,4 +145,3 @@ export const useSyllabusAnalysis = ({
         pipelineStage
     };
 };
-

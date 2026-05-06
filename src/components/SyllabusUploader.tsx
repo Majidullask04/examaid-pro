@@ -17,11 +17,12 @@ import { toast } from 'sonner';
 
 interface SyllabusUploaderProps {
   onAnalyze: (imageBase64: string, studyGoal: 'pass' | 'high_marks') => void;
+  onAnalyzeWithoutUpload?: (studyGoal: 'pass' | 'high_marks') => void;
   isProcessing: boolean;
   processingStage: string;
 }
 
-export function SyllabusUploader({ onAnalyze, isProcessing, processingStage }: SyllabusUploaderProps) {
+export function SyllabusUploader({ onAnalyze, onAnalyzeWithoutUpload, isProcessing, processingStage }: SyllabusUploaderProps) {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageBase64, setImageBase64] = useState<string | null>(null);
   const [studyGoal, setStudyGoal] = useState<'pass' | 'high_marks'>('high_marks');
@@ -81,7 +82,12 @@ export function SyllabusUploader({ onAnalyze, isProcessing, processingStage }: S
 
   const handleAnalyze = () => {
     if (!imageBase64) {
-      toast.error('Please upload a syllabus image first');
+      if (onAnalyzeWithoutUpload) {
+        onAnalyzeWithoutUpload(studyGoal);
+        return;
+      }
+
+      toast.error('Upload a syllabus image or use quick analysis without upload');
       return;
     }
     onAnalyze(imageBase64, studyGoal);
@@ -232,26 +238,34 @@ export function SyllabusUploader({ onAnalyze, isProcessing, processingStage }: S
       </Card>
 
       {/* Analyze Button */}
-      {imagePreview && (
-        <Button
-          onClick={handleAnalyze}
-          disabled={isProcessing || !imageBase64}
-          className="w-full gap-2 transition-all duration-300"
-          size="lg"
-          variant={isProcessing ? "secondary" : "default"}
-        >
-          {isProcessing ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              {processingStage || 'Processing...'}
-            </>
-          ) : (
-            <>
-              <Sparkles className="h-4 w-4" />
-              Analyze Syllabus with AI
-            </>
-          )}
-        </Button>
+      <Button
+        onClick={handleAnalyze}
+        disabled={isProcessing || (!imageBase64 && !onAnalyzeWithoutUpload)}
+        className="w-full gap-2 transition-all duration-300"
+        size="lg"
+        variant={isProcessing ? "secondary" : "default"}
+      >
+        {isProcessing ? (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin" />
+            {processingStage || 'Processing...'}
+          </>
+        ) : (
+          <>
+            <Sparkles className="h-4 w-4" />
+            {imageBase64
+              ? 'Analyze Uploaded Syllabus'
+              : onAnalyzeWithoutUpload
+                ? 'Analyze Selected Subject'
+                : 'Upload Image to Analyze'}
+          </>
+        )}
+      </Button>
+
+      {!imageBase64 && onAnalyzeWithoutUpload && (
+        <p className="text-center text-xs text-muted-foreground">
+          Upload is optional. This uses the selected subject's built-in syllabus and previous-paper data.
+        </p>
       )}
 
       {/* Processing Stages Indicator */}

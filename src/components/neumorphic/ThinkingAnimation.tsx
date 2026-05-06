@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { Brain, Search, BarChart3, Sparkles, Loader2 } from "lucide-react";
+import { Brain, BarChart3, Sparkles, Loader2 } from "lucide-react";
 
 interface ThinkingAnimationProps {
   stage: string;
@@ -15,10 +15,10 @@ const SearchingImage = ({ className }: { className?: string }) => (
 );
 
 const stageConfig: Record<string, { icon: React.ElementType; text: string; color: string }> = {
-  "analyzing": { icon: Brain, text: "DeepSeek is reasoning", color: "text-primary" },
-  "searching": { icon: SearchingImage, text: "Perplexity is finding papers", color: "text-chart-2" },
-  "building": { icon: BarChart3, text: "Building hit ratio analysis", color: "text-chart-3" },
-  "generating": { icon: Sparkles, text: "Creating your study plan", color: "text-chart-5" },
+  "analyzing": { icon: Brain, text: "Analyzing previous papers", color: "text-primary" },
+  "searching": { icon: SearchingImage, text: "Finding repeated questions", color: "text-chart-2" },
+  "building": { icon: BarChart3, text: "Preparing important questions", color: "text-chart-3" },
+  "generating": { icon: Sparkles, text: "Generating exam-focused answers", color: "text-chart-5" },
   "default": { icon: Loader2, text: "Processing", color: "text-muted-foreground" },
 };
 
@@ -26,13 +26,27 @@ export function ThinkingAnimation({ stage, className }: ThinkingAnimationProps) 
   // Determine which config to use based on stage text
   let config = stageConfig.default;
 
-  if (stage.toLowerCase().includes("analyzing") || stage.toLowerCase().includes("stage 1")) {
+  if (
+    stage.toLowerCase().includes("vision") ||
+    stage.toLowerCase().includes("ocr") ||
+    stage.toLowerCase().includes("analyzing") ||
+    stage.toLowerCase().includes("analysis") ||
+    stage.toLowerCase().includes("stage 1") ||
+    stage.toLowerCase().includes("stage 3")
+  ) {
     config = stageConfig.analyzing;
   } else if (stage.toLowerCase().includes("searching") || stage.toLowerCase().includes("stage 2") || stage.toLowerCase().includes("papers")) {
     config = stageConfig.searching;
   } else if (stage.toLowerCase().includes("building") || stage.toLowerCase().includes("hit ratio") || stage.toLowerCase().includes("stage 3")) {
     config = stageConfig.building;
-  } else if (stage.toLowerCase().includes("generating") || stage.toLowerCase().includes("stage 4") || stage.toLowerCase().includes("stage 5") || stage.toLowerCase().includes("study")) {
+  } else if (
+    stage.toLowerCase().includes("generating") ||
+    stage.toLowerCase().includes("prep") ||
+    stage.toLowerCase().includes("formatter") ||
+    stage.toLowerCase().includes("stage 4") ||
+    stage.toLowerCase().includes("stage 5") ||
+    stage.toLowerCase().includes("study")
+  ) {
     config = stageConfig.generating;
   }
 
@@ -54,7 +68,7 @@ export function ThinkingAnimation({ stage, className }: ThinkingAnimationProps) 
         <p className="text-sm text-muted-foreground mt-1">{stage}</p>
       </div>
       <div className="flex gap-2">
-        {[1, 2, 3, 4].map((i) => (
+        {[1, 2, 3, 4, 5].map((i) => (
           <div
             key={i}
             className={cn(

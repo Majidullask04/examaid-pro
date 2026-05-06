@@ -6,8 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { apiUrl } from '@/lib/api';
 import { 
   Video, 
   FileText, 
@@ -58,21 +58,23 @@ export function LearningResources({ open, onOpenChange, topic, context }: Learni
     setHasSearched(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('find-resources', {
-        body: { topic, context }
+      const response = await fetch(apiUrl('/api/resources'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          topic,
+          context,
+        })
       });
 
-      if (error) {
-        console.error('Error fetching resources:', error);
-        toast.error('Failed to find resources. Please try again.');
+      if (!response.ok) {
+        toast.error('Failed to find resources via API. Please try again.');
         return;
       }
 
-      if (data.error) {
-        toast.error(data.error);
-        return;
-      }
-
+      const data = await response.json() as ResourceResult;
       setResources(data);
       toast.success('Found learning resources!');
     } catch (error) {

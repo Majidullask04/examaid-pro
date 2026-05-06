@@ -1,105 +1,186 @@
 import { Link } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
-import { Target, Atom, BookOpen, GraduationCap, ArrowRight, Sparkles } from 'lucide-react';
+import { Target, Atom, BookOpen, GraduationCap, ArrowRight, Sparkles, Bot, Clock3, Layers3 } from 'lucide-react';
 import { Logo } from '@/components/layout/Logo';
 
 export default function Index() {
   return (
-    <div className="min-h-screen flex flex-col bg-background grid-bg selection:bg-primary/20 selection:text-primary">
+    <div className="min-h-screen flex flex-col bg-slate-950 selection:bg-primary/20 selection:text-primary overflow-hidden">
       <Header />
 
-      <main className="flex-1 container px-4 py-8 md:py-16 max-w-6xl mx-auto flex flex-col justify-center min-h-[80vh]">
-        {/* Hero Header */}
-        <div className="text-center mb-12 space-y-6 blur-in">
-          <div className="inline-flex items-center justify-center mb-6">
-            <div className="relative">
-              <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full"></div>
-              <Logo showText={false} iconClassName="h-20 w-20 p-4 bg-background/50 backdrop-blur-xl border border-white/10 shadow-2xl" />
-            </div>
-          </div>
-
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/50 border border-white/5 backdrop-blur-sm text-sm font-medium text-muted-foreground mb-4">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-            </span>
-            AI-Powered Exam Prep
-          </div>
-
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-foreground text-glow max-w-4xl mx-auto">
-            Study Smarter with <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-400">ExamHelper</span>
-          </h1>
-
-          <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed px-4">
-            Master your JNTUH R22 exams with AI-structured answers, high-probability questions, and curated resources.
-          </p>
+      <main className="relative flex-1">
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute left-[-8rem] top-20 h-64 w-64 rounded-full bg-primary/12 blur-3xl" />
+          <div className="absolute right-[-6rem] top-32 h-72 w-72 rounded-full bg-cyan-400/10 blur-3xl" />
+          <div className="absolute bottom-0 left-1/3 h-80 w-80 rounded-full bg-emerald-400/8 blur-3xl" />
         </div>
 
-        {/* Feature Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-16 max-w-4xl mx-auto w-full px-2">
-          <div className="card-modern p-6 md:p-8 flex flex-col items-center text-center group blur-in blur-in-delay-1">
-            <div className="p-4 rounded-2xl bg-primary/10 mb-5 group-hover:scale-110 transition-transform duration-300">
-              <Target className="h-8 w-8 text-primary" />
-            </div>
-            <h3 className="text-xl font-bold text-foreground mb-2">High-Probability Questions</h3>
-            <p className="text-muted-foreground">Focus on what matters most with AI-predicted important questions.</p>
-          </div>
+        <div className="container relative max-w-6xl mx-auto px-4 py-8 md:py-16">
+          <section className="grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr] min-h-[78vh]">
+            <div className="space-y-6 blur-in">
+              <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/20 px-4 py-2 text-sm font-medium text-white">
+                <Sparkles className="h-4 w-4 text-yellow-400" />
+                One workspace for study plans, AI help, and revision resources
+              </div>
 
-          <div className="card-modern p-6 md:p-8 flex flex-col items-center text-center group blur-in blur-in-delay-2">
-            <div className="p-4 rounded-2xl bg-accent/10 mb-5 group-hover:scale-110 transition-transform duration-300">
-              <Atom className="h-8 w-8 text-accent-foreground" />
-            </div>
-            <h3 className="text-xl font-bold text-foreground mb-2">AI-Structured Answers</h3>
-            <p className="text-muted-foreground">Get perfectly formatted answers optimized for exam scoring.</p>
-          </div>
-        </div>
+              <div className="space-y-4">
+                <div className="inline-flex items-center justify-center">
+                  <div className="relative">
+                    <div className="absolute inset-0 rounded-full bg-primary/20 blur-xl" />
+                    <Logo showText={false} iconClassName="h-16 w-16 p-3 bg-background/60 backdrop-blur-xl border border-white/10 shadow-2xl" />
+                  </div>
+                </div>
 
-        {/* Center Action Button - Glow Effect */}
-        <div className="mb-20 text-center blur-in blur-in-delay-3 px-4">
-          <Link
-            to="/jntuh"
-            className="group relative inline-flex items-center justify-center gap-3 px-8 py-4 bg-primary text-primary-foreground rounded-full font-bold text-lg shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all hover:scale-105 active:scale-95 w-full sm:w-auto"
-          >
-            <span className="absolute inset-0 rounded-full bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity blur-md"></span>
-            <Sparkles className="h-5 w-5" />
-            <span>Start JNTUH R22 Analysis</span>
-            <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
-          </Link>
-          <p className="mt-6 text-sm text-muted-foreground">
-            Join thousands of students aceing their exams
-          </p>
-        </div>
+                <h1 className="max-w-4xl text-4xl font-bold tracking-tight text-white md:text-6xl xl:text-7xl">
+                  Build a
+                  {' '}
+                  <span className="bg-gradient-to-r from-blue-400 via-cyan-300 to-emerald-300 bg-clip-text text-transparent">
+                    smarter exam strategy
+                  </span>
+                  {' '}
+                  for JNTUH.
+                </h1>
 
-        {/* Footer Quick Links */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto w-full blur-in blur-in-delay-4 px-2">
-          <Link
-            to="/subjects"
-            className="glass-panel p-5 rounded-2xl flex items-center gap-4 hover:bg-card/50 transition-colors group"
-          >
-            <div className="p-3 rounded-xl bg-success/10 group-hover:bg-success/20 transition-colors">
-              <BookOpen className="h-6 w-6 text-success" />
-            </div>
-            <div className="flex-1">
-              <p className="font-semibold text-foreground">Notes & Video</p>
-              <p className="text-xs text-muted-foreground">Browse study materials</p>
-            </div>
-            <ArrowRight className="h-4 w-4 text-muted-foreground opacity-50 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0" />
-          </Link>
+                <p className="max-w-2xl text-lg leading-relaxed text-slate-300 md:text-xl">
+                  AI-powered question prediction from 5+ years of previous papers. 
+                  Get high-confidence predictions for your JNTUH exams.
+                </p>
+              </div>
 
-          <Link
-            to="/subjects?tab=search"
-            className="glass-panel p-5 rounded-2xl flex items-center gap-4 hover:bg-card/50 transition-colors group"
-          >
-            <div className="p-3 rounded-xl bg-blue-500/10 group-hover:bg-blue-500/20 transition-colors">
-              <GraduationCap className="h-6 w-6 text-blue-500" />
+              <div className="grid gap-3 sm:grid-cols-3">
+                {[
+                  { label: 'Prediction Accuracy', value: '85%+' },
+                  { label: 'Previous Papers', value: '5+ Years' },
+                  { label: 'AI Analysis', value: '24/7 Available' },
+                ].map((item) => (
+                  <div key={item.label} className="rounded-2xl border border-white/10 bg-card/60 px-4 py-4 backdrop-blur-xl">
+                    <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{item.label}</p>
+                    <p className="mt-2 text-sm font-semibold text-foreground">{item.value}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <Link
+                  to="/subjects"
+                  className="group inline-flex items-center justify-center gap-3 rounded-full bg-primary px-7 py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/25 transition-all hover:scale-[1.02] hover:shadow-primary/40"
+                >
+                  <Target className="h-5 w-5" />
+                  Get Question Predictions
+                  <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+                </Link>
+
+                <Link
+                  to="/jntuh"
+                  className="inline-flex items-center justify-center gap-3 rounded-full border border-white/10 bg-card/70 px-7 py-4 text-base font-semibold text-foreground backdrop-blur-xl transition-colors hover:bg-card"
+                >
+                  <GraduationCap className="h-5 w-5 text-primary" />
+                  JNTUH Workspace
+                </Link>
+              </div>
+
+              <p className="text-sm text-muted-foreground">
+                Focus faster, revise cleaner, and keep everything in one place.
+              </p>
             </div>
-            <div className="flex-1">
-              <p className="font-semibold text-foreground">Resource Finder</p>
-              <p className="text-xs text-muted-foreground">Find videos & articles</p>
+            <div className="blur-in blur-in-delay-2">
+              <div className="card-modern overflow-hidden rounded-[32px] border border-white/10 p-6 md:p-8">
+                <div className="mb-6 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary">Control Center</p>
+                    <h2 className="mt-2 text-2xl font-bold text-foreground">What the app helps you do</h2>
+                  </div>
+                  <div className="rounded-2xl border border-white/10 bg-background/60 p-3">
+                    <Logo showText={false} iconClassName="h-10 w-10 p-2" />
+                  </div>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-2xl border border-white/10 bg-background/60 p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="rounded-xl bg-primary/10 p-2 text-primary">
+                        <Target className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold">Exam planning</p>
+                        <p className="text-xs text-muted-foreground">Turn subject codes into a usable study plan.</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-white/10 bg-background/60 p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="rounded-xl bg-emerald-400/10 p-2 text-emerald-300">
+                        <Clock3 className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold">Fast revision</p>
+                        <p className="text-xs text-muted-foreground">Use pass mode when time is tight.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-6 space-y-3">
+                  {[
+                    { icon: Layers3, title: 'Pipeline-backed study plans', copy: 'Get live subject analysis, plan summaries, and PDF export in one flow.' },
+                    { icon: Bot, title: 'Ask for explanations instantly', copy: 'Use the AI workspace for short answers, deep explanations, and revision summaries.' },
+                    { icon: BookOpen, title: 'Jump to resource discovery', copy: 'Find structured learning paths, video links, and article shortcuts for any topic.' },
+                  ].map((item) => (
+                    <div key={item.title} className="flex items-start gap-4 rounded-2xl border border-white/8 bg-background/50 p-4">
+                      <div className="rounded-xl bg-white/5 p-2">
+                        <item.icon className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-foreground">{item.title}</p>
+                        <p className="mt-1 text-sm text-muted-foreground">{item.copy}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
-            <ArrowRight className="h-4 w-4 text-muted-foreground opacity-50 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0" />
-          </Link>
+          </section>
+
+          <section className="grid gap-4 md:grid-cols-3">
+            {[
+              {
+                to: '/jntuh',
+                icon: GraduationCap,
+                title: 'JNTUH Workspace',
+                copy: 'Choose a branch, pull the subject list, and generate a live study plan.',
+              },
+              {
+                to: '/subjects',
+                icon: Atom,
+                title: 'AI Solver',
+                copy: 'Ask targeted questions and save useful responses into your notes.',
+              },
+              {
+                to: '/subjects?tab=search',
+                icon: BookOpen,
+                title: 'Resource Finder',
+                copy: 'Search for videos, articles, and a guided learning path for tough topics.',
+              },
+            ].map((item) => (
+              <Link
+                key={item.title}
+                to={item.to}
+                className="group card-modern rounded-[28px] p-6 transition-transform hover:-translate-y-1"
+              >
+                <div className="mb-5 inline-flex rounded-2xl bg-primary/10 p-3 text-primary">
+                  <item.icon className="h-6 w-6" />
+                </div>
+                <h3 className="text-xl font-bold text-foreground">{item.title}</h3>
+                <p className="mt-3 text-sm leading-6 text-muted-foreground">{item.copy}</p>
+                <div className="mt-6 flex items-center gap-2 text-sm font-semibold text-primary">
+                  Open
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </div>
+              </Link>
+            ))}
+          </section>
         </div>
       </main>
 

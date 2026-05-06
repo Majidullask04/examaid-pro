@@ -15,9 +15,9 @@ interface QuestionCardProps {
 }
 
 const importanceBadgeVariants = {
-  high: 'bg-destructive/10 text-destructive border-destructive/20',
-  medium: 'bg-primary/10 text-primary border-primary/20',
-  low: 'bg-muted text-muted-foreground border-border',
+  high: 'bg-red-500/20 text-red-400 border-red-500/30 px-3 py-1 text-sm font-semibold',
+  medium: 'bg-blue-500/20 text-blue-400 border-blue-500/30 px-3 py-1 text-sm font-semibold',
+  low: 'bg-slate-700 text-slate-300 border-slate-600 px-3 py-1 text-sm font-semibold',
 };
 
 export function QuestionCard({ question, onExplain, isExplaining, explanation }: QuestionCardProps) {
@@ -27,10 +27,10 @@ export function QuestionCard({ question, onExplain, isExplaining, explanation }:
 
   return (
     <>
-      <Card className="transition-all duration-300 hover:shadow-md">
-        <CardHeader className="pb-2">
+      <Card className="transition-all duration-300 hover:shadow-xl border-2 border-slate-700 bg-slate-900">
+        <CardHeader className="pb-4">
           <div className="flex items-start justify-between gap-4">
-            <CardTitle className="text-base font-medium leading-relaxed">
+            <CardTitle className="text-xl md:text-2xl font-bold leading-relaxed text-white">
               {question.question}
             </CardTitle>
             <Badge 
@@ -41,75 +41,75 @@ export function QuestionCard({ question, onExplain, isExplaining, explanation }:
             </Badge>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6">
           {question.answer && (
-            <div>
+            <div className="bg-slate-800 rounded-xl p-4 border-2 border-slate-600">
               <button
                 onClick={() => setShowAnswer(!showAnswer)}
-                className="flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+                className="flex items-center gap-2 text-base font-semibold text-white hover:text-slate-200 transition-colors w-full text-left"
               >
-                {showAnswer ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                {showAnswer ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
                 {showAnswer ? 'Hide Answer' : 'Show Answer'}
               </button>
               {showAnswer && (
-                <div className="mt-2 p-3 bg-muted/50 rounded-lg text-sm">
+                <div className="mt-3 p-4 bg-slate-700 rounded-lg text-base text-white leading-relaxed border border-slate-600">
                   {question.answer}
                 </div>
               )}
             </div>
           )}
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-3">
             <Button
               variant="outline"
-              size="sm"
+              size="default"
               onClick={() => onExplain(question, 'explain')}
               disabled={isExplaining}
-              className="gap-2"
+              className="gap-2 flex-1 min-w-[180px] h-11 bg-slate-800 text-white border-2 border-slate-600 hover:bg-slate-700"
             >
               {isExplaining ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="h-5 w-5 animate-spin text-white" />
               ) : (
-                <Lightbulb className="h-4 w-4" />
+                <Lightbulb className="h-5 w-5 text-white" />
               )}
               Simple Explanation
             </Button>
             <Button
               variant="outline"
-              size="sm"
+              size="default"
               onClick={() => onExplain(question, 'deep')}
               disabled={isExplaining}
-              className="gap-2"
+              className="gap-2 flex-1 min-w-[180px] h-11 bg-slate-800 text-white border-2 border-slate-600 hover:bg-slate-700"
             >
               {isExplaining ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="h-5 w-5 animate-spin text-white" />
               ) : (
-                <Brain className="h-4 w-4" />
+                <Brain className="h-5 w-5 text-white" />
               )}
               Deep Understanding
             </Button>
             <Button
               variant="secondary"
-              size="sm"
+              size="default"
               onClick={() => setShowResources(true)}
-              className="gap-2"
+              className="gap-2 flex-1 min-w-[180px] h-11 bg-slate-800 text-white border-2 border-slate-600 hover:bg-slate-700"
             >
-              <Video className="h-4 w-4" />
+              <Video className="h-5 w-5 text-white" />
               Find Resources
             </Button>
           </div>
 
           {explanation && (
-            <div>
+            <div className="bg-slate-800 rounded-xl p-4 border-2 border-slate-600">
               <button
                 onClick={() => setShowExplanation(!showExplanation)}
-                className="flex items-center gap-2 text-sm font-medium text-secondary hover:text-secondary/80 transition-colors"
+                className="flex items-center gap-2 text-base font-semibold text-white hover:text-slate-200 transition-colors w-full text-left"
               >
-                {showExplanation ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                {showExplanation ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
                 {showExplanation ? 'Hide AI Explanation' : 'View AI Explanation'}
               </button>
               {showExplanation && (
-                <div className="mt-2 p-4 bg-secondary/5 border border-secondary/20 rounded-lg text-sm prose prose-sm max-w-none">
+                <div className="mt-3 p-4 bg-slate-700 rounded-lg text-base text-white leading-relaxed prose prose-sm max-w-none border border-slate-600">
                   <div className="whitespace-pre-wrap">{explanation}</div>
                 </div>
               )}

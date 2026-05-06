@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
+import { apiUrl } from '@/lib/api';
 
 interface ResourceItem {
   title: string;
@@ -75,11 +76,22 @@ export default function Subjects() {
     setSearchedTopic(resourceQuery);
 
     try {
-      const { data, error } = await supabase.functions.invoke('find-resources', {
-        body: { topic: resourceQuery, context: 'JNTUH exam preparation' }
+      const response = await fetch(apiUrl('/api/resources'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          topic: resourceQuery,
+          context: 'JNTUH exam preparation',
+        })
       });
 
-      if (error) throw error;
+      if (!response.ok) {
+        throw new Error('Failed to load resources');
+      }
+
+      const data = await response.json() as SearchResults;
 
       setSearchResults({
         videos: data.videos || [],

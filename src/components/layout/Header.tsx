@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
-import { BookOpen, User, LogOut, Settings, GraduationCap, Menu } from 'lucide-react';
+import { BookOpen, User, LogOut, Settings, GraduationCap, Menu, Target, Sparkles, Sun, Moon } from 'lucide-react';
 import { Logo } from '@/components/layout/Logo';
 import {
   DropdownMenu,
@@ -22,9 +22,23 @@ import {
 export function Header() {
   const { user, isAdmin, signOut } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isLightMode, setIsLightMode] = useState(() => document.documentElement.classList.contains('light'));
+
+  const toggleTheme = () => {
+    const root = document.documentElement;
+    if (root.classList.contains('light')) {
+      root.classList.remove('light');
+      setIsLightMode(false);
+      localStorage.setItem('theme', 'dark');
+    } else {
+      root.classList.add('light');
+      setIsLightMode(true);
+      localStorage.setItem('theme', 'light');
+    }
+  };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-50 w-full border-b border-slate-700 bg-slate-900/95 backdrop-blur-md">
       <div className="container flex h-16 items-center justify-between px-4">
         <div className="flex items-center gap-4">
           {/* Mobile Menu */}
@@ -35,33 +49,34 @@ export function Header() {
                 <span className="sr-only">Open menu</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-[300px] sm:w-[400px]">
+            <SheetContent side="left" className="w-[300px] sm:w-[400px] bg-slate-900 border-slate-700">
               <SheetHeader>
-                <SheetTitle className="text-left">
+                <SheetTitle className="text-left text-white">
                   <Logo />
                 </SheetTitle>
               </SheetHeader>
               <nav className="flex flex-col gap-2 mt-8">
                 <Link
                   to="/subjects"
-                  className="flex items-center gap-3 px-4 py-3 text-base font-medium text-foreground hover:bg-accent hover:text-accent-foreground rounded-lg transition-colors"
+                  className="flex items-center gap-3 px-4 py-3 text-base font-bold text-blue-400 bg-blue-500/10 rounded-lg transition-colors"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  <BookOpen className="h-5 w-5" />
-                  Subjects
+                  <Target className="h-5 w-5" />
+                  Get Question Predictions
+                  <Sparkles className="h-4 w-4 ml-auto text-yellow-500" />
                 </Link>
                 <Link
                   to="/jntuh"
-                  className="flex items-center gap-3 px-4 py-3 text-base font-medium text-foreground hover:bg-accent hover:text-accent-foreground rounded-lg transition-colors"
+                  className="flex items-center gap-3 px-4 py-3 text-base font-medium text-white hover:bg-slate-800 rounded-lg transition-colors"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   <GraduationCap className="h-5 w-5" />
-                  JNTUH R22
+                  JNTUH R22 Workspace
                 </Link>
                 {isAdmin && (
                   <Link
                     to="/admin"
-                    className="flex items-center gap-3 px-4 py-3 text-base font-medium text-foreground hover:bg-accent hover:text-accent-foreground rounded-lg transition-colors"
+                    className="flex items-center gap-3 px-4 py-3 text-base font-medium text-white hover:bg-slate-800 rounded-lg transition-colors"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     <Settings className="h-5 w-5" />
@@ -78,22 +93,28 @@ export function Header() {
           </Link>
         </div>
 
-        <nav className="hidden md:flex items-center gap-8">
-          <Link to="/subjects" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
-            Subjects
-          </Link>
-          <Link to="/jntuh" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors flex items-center gap-1.5">
+        <nav className="hidden md:flex items-center gap-6">
+          <Button asChild size="sm" className="rounded-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0">
+            <Link to="/subjects" className="flex items-center gap-2">
+              <Target className="h-4 w-4" />
+              Get Predictions
+            </Link>
+          </Button>
+          <Link to="/jntuh" className="text-sm font-medium text-white hover:text-slate-200 transition-colors flex items-center gap-1.5">
             <GraduationCap className="h-4 w-4" />
             JNTUH R22
           </Link>
           {isAdmin && (
-            <Link to="/admin" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+            <Link to="/admin" className="text-sm font-medium text-white hover:text-slate-200 transition-colors">
               Admin Panel
             </Link>
           )}
         </nav>
 
         <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={toggleTheme} className="h-10 w-10 rounded-full bg-secondary/50 hover:bg-secondary">
+            {isLightMode ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+          </Button>
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

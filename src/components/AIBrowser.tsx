@@ -8,6 +8,7 @@ import { MarkdownRenderer } from '@/components/MarkdownRenderer';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { apiUrl } from '@/lib/api';
 
 interface Message {
   id: string;
@@ -89,28 +90,30 @@ export function AIBrowser({ userId }: AIBrowserProps) {
       // Build conversation history (excluding the placeholder)
       const history = messages.map(m => ({ role: m.role, content: m.content }));
 
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat-solver`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify({
-            question: userMessage.content,
-            messages: history,
-          }),
-        }
-      );
+      const response = await fetch(apiUrl('/api/ai/stream'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messages: [
+            {
+              role: 'system',
+              content: 'You are a focused JNTUH exam coach. Stay concise, be practical, and prefer answers that help a student score marks fast.'
+            },
+            ...history,
+            { role: 'user', content: userMessage.content }
+          ]
+        }),
+      });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         let errorMessage = errorData.error || `Request failed: ${response.status}`;
 
         // Handle specific error cases for better user feedback
-        if (errorMessage.includes('OpenRouter authentication failed')) {
-          errorMessage = 'Service configuration error: API Key invalid or missing. Please contact administrator.';
+        if (errorMessage.includes('OpenRouter authentication failed') || errorMessage.includes('API Key')) {
+          errorMessage = 'Temporary AI issue. Please retry.';
         } else if (errorMessage.includes('Rate limit exceeded')) {
           errorMessage = 'Too many requests. Please wait a moment and try again.';
         } else if (errorMessage.includes('credits exhausted')) {
