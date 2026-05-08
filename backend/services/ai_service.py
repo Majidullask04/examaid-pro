@@ -1,7 +1,7 @@
 """
 MVP AI service.
 
-This is the single active AI entrypoint for exam answers. It calls Gemini
+This is the single active AI entrypoint for exam answers. It calls NVIDIA/Kimi
 directly, validates the structured response, and hides provider errors from
 students behind one friendly retry message.
 """
@@ -32,6 +32,12 @@ class TemporaryAIError(RuntimeError):
     pass
 
 
+# NVIDIA/Kimi configuration
+NVIDIA_API_KEY = os.getenv("NVIDIA_API_KEY", "").strip()
+NVIDIA_TEXT_MODEL = os.getenv("NVIDIA_TEXT_MODEL", "moonshotai/kimi-k2.6")
+NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/v1"
+
+# Gemini fallback (if NVIDIA not available)
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
 GEMINI_API_URL = (
     f"https://generativelanguage.googleapis.com/v1beta/models/"
@@ -39,12 +45,16 @@ GEMINI_API_URL = (
 )
 
 
+def _nvidia_key() -> str:
+    return NVIDIA_API_KEY
+
+
 def _gemini_key() -> str:
     return os.getenv("GEMINI_API_KEY", "").strip()
 
 
 def has_ai_key() -> bool:
-    return bool(_gemini_key())
+    return bool(_nvidia_key()) or bool(_gemini_key())
 
 
 def _build_prompt(request: AIAnswerRequest) -> str:
@@ -108,35 +118,64 @@ def _validate_answer(payload: dict[str, Any]) -> StructuredAnswer:
 
 
 async def generate_structured_answer(request: AIAnswerRequest, retries: int = 2) -> StructuredAnswer:
-    api_key = _gemini_key()
+    # Try NVIDIA/Kimi first, fallback to Gemini
+    api_key = _nvidia_key()
+    use_nvidia = bool(api_key)
+    
     if not api_key:
-        raise TemporaryAIError("Temporary AI issue. Please retry.")
+        # Fallback to Gemini
+        api_key = _gemini_key()
+        if not api_key:
+            raise TemporaryAIError("Temporary AI issue. Please retry.")
 
     prompt = _build_prompt(request)
-    payload = {
-        "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {
-            "temperature": 0.2,
-            "maxOutputTokens": 1400,
-            "responseMimeType": "application/json",
-        },
-    }
 
     last_error: Exception | None = None
 
     for attempt in range(retries + 1):
         try:
-            async with httpx.AsyncClient(timeout=18.0) as client:
-                response = await client.post(
-                    GEMINI_API_URL,
-                    params={"key": api_key},
-                    json=payload,
-                )
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                if use_nvidia:
+                    # NVIDIA/Kimi API format
+                    url = f"{NVIDIA_BASE_URL}/chat/completions"
+                    headers = {
+                        "Authorization": f"Bearer {api_key}",
+                        "Content-Type": "application/json",
+                    }
+                    payload = {
+                        "model": NVIDIA_TEXT_MODEL,
+                        "messages": [{"role": "user", "content": prompt}],
+                        "temperature": 0.2,
+                        "max_tokens": 1400,
+                    }
+                    response = await client.post(url, headers=headers, json=payload)
+                else:
+                    # Gemini API format (fallback)
+                    payload = {
+                        "contents": [{"parts": [{"text": prompt}]}],
+                        "generationConfig": {
+                            "temperature": 0.2,
+                            "maxOutputTokens": 1400,
+                            "responseMimeType": "application/json",
+                        },
+                    }
+                    response = await client.post(
+                        GEMINI_API_URL,
+                        params={"key": api_key},
+                        json=payload,
+                    )
+                
                 response.raise_for_status()
+                data = response.json()
 
-            data = response.json()
-            text = data["candidates"][0]["content"]["parts"][0]["text"]
-            return _validate_answer(_extract_json(text))
+                if use_nvidia:
+                    # NVIDIA response format
+                    text = data["choices"][0]["message"]["content"]
+                else:
+                    # Gemini response format
+                    text = data["candidates"][0]["content"]["parts"][0]["text"]
+                
+                return _validate_answer(_extract_json(text))
         except (httpx.TimeoutException, httpx.HTTPError, KeyError, IndexError, json.JSONDecodeError, ValidationError, ValueError) as exc:
             last_error = exc
             if attempt < retries:
